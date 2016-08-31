@@ -26,6 +26,11 @@ Then, you can simply initiate auth with:
 ``` Meteor.loginWithAuth0() ```
 on the client.
 
+## Project Aim
+Although there are already [some other meteor-auth0 repositories out there](https://github.com/search?utf8=%E2%9C%93&q=meteor+auth0), this one has some different objectives:
+- Future ready: Use ES6
+- Separation of concerns: Auth0 can be used with or without Lock.js. This repo aims to be the common base.
+- Best practices: Use settings.json instead of Autopublish and databases.
 
 ## Thanks and further info
 - [Robfallow's Writing a Meteor OAuth 2 Handler](http://robfallows.github.io/2015/12/17/writing-an-oauth-2-handler.html)
