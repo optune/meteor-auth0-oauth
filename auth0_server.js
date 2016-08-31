@@ -105,7 +105,8 @@ OAuth.registerService('auth0', 2, null, function(query) {
   if (response.refreshToken) {
     serviceData.refreshToken = response.refreshToken;
   }
-  _.extend(serviceData, _.pick(identity, Auth0.whitelistedFields));
+
+  _.extend(serviceData, identity);
 
   serviceData.id = identity.user_id;
 
