@@ -28,6 +28,19 @@ Accounts.addAutopublishFields({
     })
 });
 
+// Insert a configuration-stub into the database. All the config should be configured
+// via settings.json
+Meteor.startup(() => {
+  ServiceConfiguration.configurations.upsert(
+    { service: 'auth0' },
+    {
+      $set: {
+        _configViaSettings: true,
+      },
+    }
+  );
+});
+
 /**
  * Boilerplate hook for use by underlying Meteor code
  */
