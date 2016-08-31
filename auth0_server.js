@@ -65,6 +65,7 @@ OAuth.registerService('auth0', 2, null, function(query) {
     clientId: Meteor.settings.public.AUTH0_CLIENT_ID,
     secret: Meteor.settings.private.AUTH0_CLIENT_SECRET,
     hostname: Meteor.settings.public.AUTH0_DOMAIN,
+    loginStyle: 'redirect',
   };
 
   /**

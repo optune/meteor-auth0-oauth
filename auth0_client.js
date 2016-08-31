@@ -50,7 +50,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   const config = {
     clientId: Meteor.settings.public.AUTH0_CLIENT_ID,
     hostname: Meteor.settings.public.AUTH0_DOMAIN,
-    loginStyle: 'popup',
+    loginStyle: 'redirect',
   };
 
   /**
@@ -69,7 +69,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     '&state=' + OAuth._stateParam(loginStyle, credentialToken) +
     // '&connection=facebook' +
     
-    '&redirect_uri=http://localhost:3000/_oauth/auth0'
+    `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
     ;
 
   /**
