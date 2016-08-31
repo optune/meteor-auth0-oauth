@@ -1,0 +1,39 @@
+{
+  "name": "@optune/meteor-auth0-oauth",
+  "private": false,
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/optune/meteor-auth0-oauth.git"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "ecmaFeatures": {
+        "experimentalObjectRestSpread": true
+      }
+    },
+    "plugins": [
+      "meteor"
+    ],
+    "extends": [
+      "airbnb/base",
+      "plugin:meteor/guide"
+    ],
+    "rules": {
+      "max-lines": "warn"
+    }
+  },
+  "keywords": [
+    "meteor",
+    "auth0",
+    "oauth",
+    "oauth2"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/optune/meteor-auth0-oauth",
+  "devDependencies": {
+    "eslint": "^2.7.0",
+    "eslint-config-airbnb": "^6.2.0",
+    "eslint-plugin-meteor": "^3.4.0"
+  }
+}
