@@ -5,7 +5,8 @@
 Auth0 = {};
 Accounts.oauth.registerService('auth0');
 
-Auth0.whitelistedFields = ['id', 'email'];
+Auth0.whitelistedFields = ['id', 'email', 'picture', 'name'];
+
 
 Accounts.addAutopublishFields({
   forLoggedInUser: _.map(
