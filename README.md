@@ -2,7 +2,7 @@ Meteor Auth0 OAuth 2.0 Provider
 ===============================
 
 This is our approach of integrating Auth0 into Meteor. It focuses on the implementation on the 
-backend and is frontend-agnostic, so you can develop your own frontend or use Auth0 lock.
+backend and is frontend-agnostic, so you can develop your own frontend or use Auth0 lock (But I dont know how to integrate with Auth0 at the moment).
 
 
 ## Usage
