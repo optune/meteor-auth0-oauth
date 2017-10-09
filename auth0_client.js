@@ -66,7 +66,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   let loginUrl = `https://${config.hostname}/authorize/` +
     '?response_type=code' +
     '&client_id=' + config.clientId +
-    '&state=' + OAuth._stateParam(loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${options.path}`) +
+    '&state=' + OAuth._stateParam(loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${options.route}`) +
     // '&connection=facebook' +
     
     `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
