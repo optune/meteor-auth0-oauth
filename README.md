@@ -31,7 +31,7 @@ Value | Default | Description
 --- | --- | ---
 `loginStyle` | 'popup' | choose between *popup* (default) and *redirect*
 `type` | - | adds a hash to the url. Can be used to identify *login* and *signup* flows separately.
-`route` | - | redirect route after successful login. 
+`path` | - | redirect path after successful login 
 
 ## Project Aim
 Although there are already [some other meteor-auth0 repositories out there](https://github.com/search?utf8=%E2%9C%93&q=meteor+auth0), this one has some different objectives:

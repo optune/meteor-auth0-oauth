@@ -58,7 +58,9 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    */
   const credentialToken = Random.secret();
   const loginStyle = OAuth._loginStyle('auth0', config, options);
-
+  let path = options.path || '';
+  path = path.startsWith('/') ? path.substring(1) : path;
+  
   /**
    * Imgur requires response_type and client_id
    * We use state to roundtrip a random token to help protect against CSRF (boilerplate)
@@ -66,7 +68,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   let loginUrl = `https://${config.hostname}/authorize/` +
     '?response_type=code' +
     '&client_id=' + config.clientId +
-    '&state=' + OAuth._stateParam(loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${options.route}`) +
+    '&state=' + OAuth._stateParam(loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
     // '&connection=facebook' +
     
     `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
