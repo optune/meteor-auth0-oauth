@@ -110,7 +110,7 @@ OAuth.registerService('auth0', 2, null, function(query) {
 
   _.extend(serviceData, identity);
 
-  serviceData.id = identity.user_id;
+  serviceData.id = identity.sub;
 
   /**
    * Return the serviceData object along with an options object containing
