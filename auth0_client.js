@@ -64,7 +64,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * We use state to roundtrip a random token to help protect against CSRF (boilerplate)
    */
   let loginUrl = `https://${config.hostname}/authorize/` +
-    '?response_type=code' +
+    '?scope=openid%20profile%20email' +
+    '&response_type=code' +
     '&client_id=' + config.clientId +
     '&state=' + OAuth._stateParam(loginStyle, credentialToken) +
     // '&connection=facebook' +
