@@ -12,19 +12,26 @@ your API keys (Securing API Keys)[https://guide.meteor.com/security.html#api-key
 
 ```
 "private": {
-	"AUTH0_CLIENT_SECRET": YOUR_CLIENT_SECRET,
-	/* ... other private keys */
+  "AUTH0_CLIENT_SECRET": YOUR_CLIENT_SECRET,
+  /* ... other private keys */
 },
 "public": {
-	"AUTH0_DOMAIN": yourauth0domain.eu.auth0.com
-	"AUTH0_CLIENT_ID": YOUR_CLIENT_ID,
-	/* ... other private keys */
+  "AUTH0_DOMAIN": yourauth0domain.eu.auth0.com
+  "AUTH0_CLIENT_ID": YOUR_CLIENT_ID,
+  /* ... other private keys */
 }
 ```
-
-Then, you can simply initiate auth with:
+### Launch Login
+Then, you can simply initiate auth with on the client:
 ``` Meteor.loginWithAuth0() ```
-on the client.
+
+
+###Supported Options
+Value | Default | Description
+--- | --- | ---
+`loginStyle` | 'popup' | choose between *popup* (default) and *redirect*
+`type` | - | adds a hash to the url. Can be used to identify *login* and *signup* flows separately.
+`path` | - | redirect path after successful login 
 
 ## Project Aim
 Although there are already [some other meteor-auth0 repositories out there](https://github.com/search?utf8=%E2%9C%93&q=meteor+auth0), this one has some different objectives:
