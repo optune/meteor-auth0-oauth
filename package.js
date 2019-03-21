@@ -12,7 +12,7 @@ Package.onUse(function(api) {
   api.use('oauth', ['client', 'server']);
   api.use('http', ['server']);
   api.use(['underscore', 'service-configuration'], ['client', 'server']);
-  api.use(['random', 'templating'], 'client');
+  api.use(['random'], 'client');
   api.use('accounts-oauth', ['client', 'server']);
   api.use('accounts-base', ['client', 'server']);
   // Export Accounts (etc) to packages using this one.
