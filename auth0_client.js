@@ -1,28 +1,27 @@
-'use strict';
+'use strict'
 
 /**
  * Define the base object namespace. By convention we use the service name
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global (boilerplate).
  */
-Auth0 = {};
-Accounts.oauth.registerService('auth0');
+Auth0 = {}
+Accounts.oauth.registerService('auth0')
 
-
-Meteor.loginWithAuth0 = function(options, callback) {  
+Meteor.loginWithAuth0 = function(options, callback) {
   /**
    * support (options, callback) and (callback)
    */
-  if (!callback && typeof options === "function") {
-    callback = options;
-    options = null;
+  if (!callback && typeof options === 'function') {
+    callback = options
+    options = null
   }
 
   /**
-   * 
+   *
    */
-  var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback);
-  Auth0.requestCredential(options, credentialRequestCompleteCallback);
-};
+  var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
+  Auth0.requestCredential(options, credentialRequestCompleteCallback)
+}
 
 /**
  * Request Auth0 credentials for the user (boilerplate).
@@ -38,10 +37,10 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Support both (options, callback) and (callback).
    */
   if (!credentialRequestCompleteCallback && typeof options === 'function') {
-    credentialRequestCompleteCallback = options;
-    options = {};
+    credentialRequestCompleteCallback = options
+    options = {}
   } else if (!options) {
-    options = {};
+    options = {}
   }
 
   /**
@@ -51,37 +50,38 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     clientId: Meteor.settings.public.AUTH0_CLIENT_ID,
     hostname: Meteor.settings.public.AUTH0_DOMAIN,
     loginStyle: 'redirect',
-  };
+  }
 
   /**
    * Boilerplate
    */
-  const credentialToken = Random.secret();
-  const loginStyle = OAuth._loginStyle('auth0', config, options);
-  let path = options.path || '';
-  path = path.startsWith('/') ? path.substring(1) : path;
-  
+  const credentialToken = Random.secret()
+  const loginStyle = OAuth._loginStyle('auth0', config, options)
+  let path = options.path || ''
+  path = path.startsWith('/') ? path.substring(1) : path
+
   /**
    * Imgur requires response_type and client_id
    * We use state to roundtrip a random token to help protect against CSRF (boilerplate)
    */
-  let loginUrl = `https://${config.hostname}/authorize/` +
+  let loginUrl =
+    `https://${config.hostname}/authorize/` +
     '?scope=openid%20profile%20email' +
     '&response_type=code' +
-    '&client_id=' + config.clientId +
-    '&state=' + OAuth._stateParam(loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
+    '&client_id=' +
+    config.clientId +
+    '&state=' +
+    OAuth._stateParam(loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
     // '&connection=facebook' +
-    
-    `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
-    ;
 
+    `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
   if (options.type) {
-    loginUrl = loginUrl + '#' + options.type;
+    loginUrl = loginUrl + '#' + options.type
   }
-  
+
   /**
    * Client initiates OAuth login request (boilerplate)
-  */
+   */
   OAuth.launchLogin({
     loginService: 'auth0',
     loginStyle: loginStyle,
@@ -89,7 +89,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     credentialRequestCompleteCallback: credentialRequestCompleteCallback,
     credentialToken: credentialToken,
     popupOptions: {
-      height: 600
-    }
-  });
-};
+      height: 600,
+    },
+  })
+}

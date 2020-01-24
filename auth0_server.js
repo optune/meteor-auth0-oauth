@@ -2,11 +2,10 @@
  * Define the base object namespace. By convention we use the service name
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global.
  */
-Auth0 = {};
-Accounts.oauth.registerService('auth0');
+Auth0 = {}
+Accounts.oauth.registerService('auth0')
 
-Auth0.whitelistedFields = ['id', 'email', 'picture', 'name'];
-
+Auth0.whitelistedFields = ['id', 'email', 'picture', 'name']
 
 Accounts.addAutopublishFields({
   forLoggedInUser: _.map(
@@ -15,8 +14,9 @@ Accounts.addAutopublishFields({
      */
     Auth0.whitelistedFields.concat(['accessToken', 'expiresAt']), // don't publish refresh token
     function(subfield) {
-      return 'services.auth0.' + subfield;
-    }),
+      return 'services.auth0.' + subfield
+    }
+  ),
 
   forOtherUsers: _.map(
     /**
@@ -25,9 +25,10 @@ Accounts.addAutopublishFields({
      */
     _.without(Auth0.whitelistedFields, 'email', 'verified_email'),
     function(subfield) {
-      return 'services.auth0.' + subfield;
-    })
-});
+      return 'services.auth0.' + subfield
+    }
+  ),
+})
 
 // Insert a configuration-stub into the database. All the config should be configured
 // via settings.json
@@ -39,15 +40,15 @@ Meteor.startup(() => {
         _configViaSettings: true,
       },
     }
-  );
-});
+  )
+})
 
 /**
  * Boilerplate hook for use by underlying Meteor code
  */
 Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
-  return OAuth.retrieveCredential(credentialToken, credentialSecret);
-};
+  return OAuth.retrieveCredential(credentialToken, credentialSecret)
+}
 
 /**
  * Register this service with the underlying OAuth handler
@@ -67,27 +68,27 @@ OAuth.registerService('auth0', 2, null, function(query) {
     secret: Meteor.settings.private.AUTH0_CLIENT_SECRET,
     hostname: Meteor.settings.public.AUTH0_DOMAIN,
     loginStyle: 'redirect',
-  };
+  }
 
   /**
    * Get the token and username (Meteor handles the underlying authorization flow).
    * Note that the username comes from from this request in Imgur.
    */
-  const response = getTokens(config, query);
-  const accessToken = response.accessToken;
-  const username = response.username;
+  const response = getTokens(config, query)
+  const accessToken = response.accessToken
+  const username = response.username
 
   /**
    * If we got here, we can now request data from the account endpoints
    * to complete our serviceData request.
    * The identity object will contain the username plus *all* properties
    * retrieved from the account and settings methods.
-  */
+   */
   const identity = _.extend(
-    {username},
+    { username },
     getAccount(config, username, accessToken)
     // getSettings(config, username, accessToken)
-  );
+  )
 
   /**
    * Build our serviceData object. This needs to contain
@@ -102,15 +103,15 @@ OAuth.registerService('auth0', 2, null, function(query) {
    */
   const serviceData = {
     accessToken,
-    expiresAt: (+new Date) + (1000 * response.expiresIn)
-  };
+    expiresAt: +new Date() + 1000 * response.expiresIn,
+  }
   if (response.refreshToken) {
-    serviceData.refreshToken = response.refreshToken;
+    serviceData.refreshToken = response.refreshToken
   }
 
-  _.extend(serviceData, identity);
+  _.extend(serviceData, identity)
 
-  serviceData.id = identity.sub;
+  serviceData.id = identity.sub
 
   /**
    * Return the serviceData object along with an options object containing
@@ -120,11 +121,11 @@ OAuth.registerService('auth0', 2, null, function(query) {
     serviceData: serviceData,
     options: {
       profile: {
-        name: response.username // comes from the token request
-      }
-    }
-  }; 
-});
+        name: response.username, // comes from the token request
+      },
+    },
+  }
+})
 
 /**
  * The following three utility functions are called in the above code to get
@@ -148,44 +149,37 @@ OAuth.registerService('auth0', 2, null, function(query) {
  * @return  {Object}              The response from the token request (see above)
  */
 const getTokens = function(config, query) {
-
-  const endpoint = `https://${config.hostname}/oauth/token`;
+  const endpoint = `https://${config.hostname}/oauth/token`
   /**
    * Attempt the exchange of code for token
    */
-  let response;
+  let response
   try {
-    response = HTTP.post(
-      endpoint, {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': `Meteor/${Meteor.release}`,
-        },
-        params: {
-          code: query.code,
-          client_id: config.clientId,
-          client_secret: config.secret,
-          grant_type: 'authorization_code',
-          redirect_uri: OAuth._redirectUri('auth0', config),
-        }
-      });
-
+    response = HTTP.post(endpoint, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': `Meteor/${Meteor.release}`,
+      },
+      params: {
+        code: query.code,
+        client_id: config.clientId,
+        client_secret: config.secret,
+        grant_type: 'authorization_code',
+        redirect_uri: OAuth._redirectUri('auth0', config),
+      },
+    })
   } catch (err) {
     throw _.extend(new Error(`Failed to complete OAuth handshake with Auth0. ${err.message}`), {
-      response: err.response
-    });
+      response: err.response,
+    })
   }
 
-
   if (response.data.error) {
-
     /**
      * The http response was a json object with an error attribute
      */
-    throw new Error(`Failed to complete OAuth handshake with Auth0. ${response.data.error}`);
-
+    throw new Error(`Failed to complete OAuth handshake with Auth0. ${response.data.error}`)
   } else {
-
     /** The exchange worked. We have an object containing
      *   access_token
      *   refresh_token
@@ -199,10 +193,10 @@ const getTokens = function(config, query) {
       accessToken: response.data.access_token,
       refreshToken: response.data.refresh_token,
       expiresIn: response.data.expires_in,
-      username: response.data.account_username
-    };
+      username: response.data.account_username,
+    }
   }
-};
+}
 
 /**
  * getAccount gets the basic Imgur account data
@@ -221,9 +215,8 @@ const getTokens = function(config, query) {
  * @return  {Object}              The response from the account request (see above)
  */
 const getAccount = function(config, username, accessToken) {
-
-  const endpoint = `https://${config.hostname}/userinfo`;
-  let accountObject;
+  const endpoint = `https://${config.hostname}/userinfo`
+  let accountObject
 
   /**
    * Note the strange .data.data - the HTTP.get returns the object in the response's data
@@ -231,19 +224,16 @@ const getAccount = function(config, username, accessToken) {
    * Hence (response).data.data
    */
   try {
-    accountObject = HTTP.get(
-      endpoint, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      }
-    );
+    accountObject = HTTP.get(endpoint, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-    return accountObject.data;
-
+    return accountObject.data
   } catch (err) {
     throw _.extend(new Error(`Failed to fetch account data from Auth0. ${err.message}`), {
-      response: err.response
-    });
+      response: err.response,
+    })
   }
-};
+}
