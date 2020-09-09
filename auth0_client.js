@@ -1,5 +1,9 @@
 'use strict'
 
+import { Meteor } from 'meteor/meteor'
+
+import { Auth0Lock } from 'auth0-lock'
+
 /**
  * Define the base object namespace. By convention we use the service name
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global (boilerplate).
@@ -60,7 +64,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   const credentialToken = Random.secret()
 
   // Detemines the login style
-  const loginStyle = OAuth._loginStyle('auth0', config, options)
+  const loginStyle =
+    options.loginStyle === 'inline' ? 'inline' : OAuth._loginStyle('auth0', config, options)
 
   // Determine path
   let path = options.path || ''
@@ -93,8 +98,10 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginService: 'auth0',
     loginStyle,
     loginUrl,
-    loginPath: Meteor.absoluteUrl(''),
+    loginPath: path,
+    loginDomain: Meteor.absoluteUrl(''),
     loginType: options.type,
+    container: options.container,
     credentialRequestCompleteCallback,
     credentialToken,
     popupOptions: {
@@ -103,29 +110,38 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   })
 }
 
-OAuth.startLogin = ({ options }) => {
+OAuth.startLogin = options => {
   if (!options.loginService) throw new Error('loginService required')
 
+  console.log('OPTIONS', options)
   if (options.loginStyle === 'inline' && options.container > '') {
-    var isOnescreener = options.loginPath.includes('onescreener.com')
+    const isOnescreener = options.loginDomain.includes('onescreener.com')
+    const isLogin = options.loginType === 'login'
 
     if (isOnescreener) {
-      languageDictionary = { title: login && 'Log in', signUpTitle: 'Get started for free' }
+      languageDictionary = { title: isLogin && 'Log in', signUpTitle: 'Get started for free' }
       logo =
         'https://res.cloudinary.com/optune-me/image/upload/c_pad,h_58,w_200/v1558014130/onescreener-v2/app/logo-onescreener.png'
     } else {
-      languageDictionary = { title: login && 'Log in', signUpTitle: 'Create account' }
+      languageDictionary = { title: isLogin && 'Log in', signUpTitle: 'Create account' }
       logo =
         'https://res.cloudinary.com/optune-me/image/upload/c_pad,h_58,w_200/v1479213946/optune/app/logo-optune-neongreen-rgb.png'
     }
 
-    OAuth.saveDataForRedirect(options.loginService, options.credentialToken);
-    
+    OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
+
     const lockOptions = {
       auth: {
         redirectUrl: Meteor.absoluteUrl('_oauth/auth0'),
+        params: {
+          state: OAuth._stateParam(
+            options.loginStyle,
+            options.credentialToken,
+            `${Meteor.absoluteUrl('')}${options.loginPath}`
+          ),
+        },
       },
-      allowedConnections: (signup && ['Username-Password-Authentication']) || null,
+      allowedConnections: (!isLogin && ['Username-Password-Authentication']) || null,
       rememberLastLogin: true,
       languageDictionary,
       theme: {
@@ -134,17 +150,17 @@ OAuth.startLogin = ({ options }) => {
       },
       closable: false,
       container: options.container,
-      allowLogin: loginType === 'login',
-      allowSignUp: loginType === 'signup',
+      allowLogin: isLogin,
+      allowSignUp: !isLogin,
     }
 
-    var lock = new Auth0Lock(
+    const lock = new Auth0Lock(
       Meteor.settings.public.AUTH0_CLIENT_ID,
       Meteor.settings.public.AUTH0_DOMAIN,
       lockOptions
     )
 
-    lock.lock.show()
+    lock.show()
   } else {
     OAuth.launchLogin(options)
   }
