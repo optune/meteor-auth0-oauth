@@ -46,5 +46,8 @@
     "eslint-plugin-meteor": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.2",
     "prettier": "^1.19.1"
+  },
+  "dependencies": {
+    "auth0-lock": "^11.26.3"
   }
 }

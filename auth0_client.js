@@ -55,8 +55,14 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   /**
    * Boilerplate
    */
+
+  // Create one-time credential secret token
   const credentialToken = Random.secret()
+
+  // Detemines the login style
   const loginStyle = OAuth._loginStyle('auth0', config, options)
+
+  // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path.substring(1) : path
 
@@ -64,6 +70,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Imgur requires response_type and client_id
    * We use state to roundtrip a random token to help protect against CSRF (boilerplate)
    */
+
   let loginUrl =
     `https://${config.hostname}/authorize/` +
     '?scope=openid%20profile%20email' +
@@ -82,14 +89,63 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   /**
    * Client initiates OAuth login request (boilerplate)
    */
-  OAuth.launchLogin({
+  Oauth.startLogin({
     loginService: 'auth0',
-    loginStyle: loginStyle,
-    loginUrl: loginUrl,
-    credentialRequestCompleteCallback: credentialRequestCompleteCallback,
-    credentialToken: credentialToken,
+    loginStyle,
+    loginUrl,
+    loginPath: Meteor.absoluteUrl(''),
+    loginType: options.type,
+    credentialRequestCompleteCallback,
+    credentialToken,
     popupOptions: {
       height: 600,
     },
   })
+}
+
+OAuth.startLogin = ({ options }) => {
+  if (!options.loginService) throw new Error('loginService required')
+
+  if (options.loginStyle === 'inline' && options.container > '') {
+    var isOnescreener = options.loginPath.includes('onescreener.com')
+
+    if (isOnescreener) {
+      languageDictionary = { title: login && 'Log in', signUpTitle: 'Get started for free' }
+      logo =
+        'https://res.cloudinary.com/optune-me/image/upload/c_pad,h_58,w_200/v1558014130/onescreener-v2/app/logo-onescreener.png'
+    } else {
+      languageDictionary = { title: login && 'Log in', signUpTitle: 'Create account' }
+      logo =
+        'https://res.cloudinary.com/optune-me/image/upload/c_pad,h_58,w_200/v1479213946/optune/app/logo-optune-neongreen-rgb.png'
+    }
+
+    OAuth.saveDataForRedirect(options.loginService, options.credentialToken);
+    
+    const lockOptions = {
+      auth: {
+        redirectUrl: Meteor.absoluteUrl('_oauth/auth0'),
+      },
+      allowedConnections: (signup && ['Username-Password-Authentication']) || null,
+      rememberLastLogin: true,
+      languageDictionary,
+      theme: {
+        logo,
+        primaryColor: '#27E200',
+      },
+      closable: false,
+      container: options.container,
+      allowLogin: loginType === 'login',
+      allowSignUp: loginType === 'signup',
+    }
+
+    var lock = new Auth0Lock(
+      Meteor.settings.public.AUTH0_CLIENT_ID,
+      Meteor.settings.public.AUTH0_DOMAIN,
+      lockOptions
+    )
+
+    lock.lock.show()
+  } else {
+    OAuth.launchLogin(options)
+  }
 }
