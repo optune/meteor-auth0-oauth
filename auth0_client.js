@@ -1,6 +1,8 @@
 'use strict'
 
 import { Meteor } from 'meteor/meteor'
+import { OAuth } from 'meteor/oauth'
+import { Accounts } from 'meteor/accounts-base'
 
 import { Auth0Lock } from 'auth0-lock'
 
@@ -28,6 +30,15 @@ Meteor.loginWithAuth0 = function(options, callback) {
 }
 
 /**
+ * Determine login style inclusive support for inline auth0 lock
+ */
+ 
+Auth0._loginStyle = function(config, options)  {
+  return options.loginStyle === 'inline' && options.lock?.containerId > '' ? 'inline' : OAuth._loginStyle('auth0', config, options)
+}
+
+
+/**
  * Request Auth0 credentials for the user (boilerplate).
  * Called from accounts-auth0.
  *
@@ -36,6 +47,7 @@ Meteor.loginWithAuth0 = function(options, callback) {
  *                                                        Takes one argument, credentialToken on
  *                                                        success, or Error on error.
  */
+
 Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   /**
    * Support both (options, callback) and (callback).
@@ -64,9 +76,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   const credentialToken = Random.secret()
 
   // Detemines the login style
-  const loginStyle =
-    options.loginStyle === 'inline' ? 'inline' : OAuth._loginStyle('auth0', config, options)
-
+  const loginStyle = Auth0._loginStyle(config, options)
+    
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path.substring(1) : path
@@ -83,7 +94,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     '&client_id=' +
     config.clientId +
     '&state=' +
-    OAuth._stateParam(loginStyle === 'inline' ? 'popup' : loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
+    OAuth._stateParam(loginStyle === 'inline' ? 'redirect' : loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
     // '&connection=facebook' +
 
     `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
@@ -101,12 +112,12 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginPath: path,
     loginDomain: Meteor.absoluteUrl(''),
     loginType: options.type,
-    container: options.container,
     credentialRequestCompleteCallback,
     credentialToken,
     popupOptions: {
       height: 600,
     },
+    lock: options.lock || {}
   })
 }
 
@@ -114,44 +125,34 @@ OAuth.startLogin = options => {
   if (!options.loginService) throw new Error('loginService required')
 
   console.log('OPTIONS', options)
-  if (options.loginStyle === 'inline' && options.container > '') {
-    const isOnescreener = options.loginDomain.includes('onescreener.com')
-    const isLogin = options.loginType === 'login'
-
-    if (isOnescreener) {
-      languageDictionary = { title: isLogin && 'Log in', signUpTitle: 'Get started for free' }
-      logo =
-        'https://res.cloudinary.com/optune-me/image/upload/c_pad,h_58,w_200/v1558014130/onescreener-v2/app/logo-onescreener.png'
-    } else {
-      languageDictionary = { title: isLogin && 'Log in', signUpTitle: 'Create account' }
-      logo =
-        'https://res.cloudinary.com/optune-me/image/upload/c_pad,h_58,w_200/v1479213946/optune/app/logo-optune-neongreen-rgb.png'
-    }
-
+  if (options.loginStyle === 'inline') {
     OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
+    
+    const isLogin = options.loginType === 'login'
+    const isSignup = options.loginType === 'login'
 
     const lockOptions = {
       auth: {
         redirectUrl: Meteor.absoluteUrl('_oauth/auth0'),
         params: {
           state: OAuth._stateParam(
-            'popup',
+            'redirect',
             options.credentialToken,
             `${Meteor.absoluteUrl('')}${options.loginPath}`
           ),
         },
       },
-      allowedConnections: (!isLogin && ['Username-Password-Authentication']) || null,
+      allowedConnections: options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
       rememberLastLogin: true,
-      languageDictionary,
+      languageDictionary: options.lock.languageDictionary,
       theme: {
-        logo,
-        primaryColor: '#27E200',
+        logo: options.lock.logo,
+        primaryColor: options.lock.primaryColor,
       },
       closable: false,
-      container: options.container,
+      container: options.containerId,
       allowLogin: isLogin,
-      allowSignUp: !isLogin,
+      allowSignUp: isSignup,
     }
 
     const lock = new Auth0Lock(
