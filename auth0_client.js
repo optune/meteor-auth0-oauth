@@ -32,7 +32,7 @@ Meteor.loginWithAuth0 = function(options, callback) {
 /**
  * Determine login style inclusive support for inline auth0 lock
  */
- 
+
 Auth0._loginStyle = function(config, options)  {
   return options.loginStyle === 'inline' && options.lock?.containerId > '' ? 'inline' : OAuth._loginStyle('auth0', config, options)
 }
@@ -129,7 +129,7 @@ OAuth.startLogin = options => {
     OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
     
     const isLogin = options.loginType === 'login'
-    const isSignup = options.loginType === 'login'
+    const isSignup = options.loginType === 'signup'
 
     const lockOptions = {
       auth: {
@@ -150,7 +150,7 @@ OAuth.startLogin = options => {
         primaryColor: options.lock.primaryColor,
       },
       closable: false,
-      container: options.containerId,
+      container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
     }
