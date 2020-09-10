@@ -83,7 +83,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     '&client_id=' +
     config.clientId +
     '&state=' +
-    OAuth._stateParam(loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
+    OAuth._stateParam(loginStyle === 'inline' ? 'popup' : loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
     // '&connection=facebook' +
 
     `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
@@ -135,7 +135,7 @@ OAuth.startLogin = options => {
         redirectUrl: Meteor.absoluteUrl('_oauth/auth0'),
         params: {
           state: OAuth._stateParam(
-            options.loginStyle,
+            'popup',
             options.credentialToken,
             `${Meteor.absoluteUrl('')}${options.loginPath}`
           ),
