@@ -2,15 +2,19 @@
 
 import { Meteor } from 'meteor/meteor'
 import { OAuth } from 'meteor/oauth'
-import { Accounts } from 'meteor/accounts-base'
+import { Accounts } from 'meteor/accounts-base'
 
 import { Auth0Lock } from 'auth0-lock'
+
+const KEY_NAME = 'Meteor_Reload'
 
 /**
  * Define the base object namespace. By convention we use the service name
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global (boilerplate).
  */
+
 Auth0 = {}
+
 Accounts.oauth.registerService('auth0')
 
 Meteor.loginWithAuth0 = function(options, callback) {
@@ -33,10 +37,11 @@ Meteor.loginWithAuth0 = function(options, callback) {
  * Determine login style inclusive support for inline auth0 lock
  */
 
-Auth0._loginStyle = function(config, options)  {
-  return options.loginStyle === 'inline' && options.lock?.containerId > '' ? 'inline' : OAuth._loginStyle('auth0', config, options)
+Auth0._loginStyle = function(config, options) {
+  return options.loginStyle === 'inline' && options.lock?.containerId > ''
+    ? 'inline'
+    : OAuth._loginStyle('auth0', config, options)
 }
-
 
 /**
  * Request Auth0 credentials for the user (boilerplate).
@@ -77,7 +82,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
 
   // Detemines the login style
   const loginStyle = Auth0._loginStyle(config, options)
-    
+
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path.substring(1) : path
@@ -94,10 +99,15 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     '&client_id=' +
     config.clientId +
     '&state=' +
-    OAuth._stateParam(loginStyle === 'inline' ? 'redirect' : loginStyle, credentialToken, `${Meteor.absoluteUrl('')}${path}`) +
-    // '&connection=facebook' +
+    OAuth._stateParam(
+      loginStyle === 'inline' ? 'redirect' : loginStyle,
+      credentialToken,
+      `${Meteor.absoluteUrl('')}${path}`
+    ) +
+    // // '&connection=facebook' +
 
     `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
+
   if (options.type) {
     loginUrl = loginUrl + '#' + options.type
   }
@@ -117,17 +127,16 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     popupOptions: {
       height: 600,
     },
-    lock: options.lock || {}
+    lock: options.lock || {},
   })
 }
 
 OAuth.startLogin = options => {
   if (!options.loginService) throw new Error('loginService required')
 
-  console.log('OPTIONS', options)
   if (options.loginStyle === 'inline') {
     OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
-    
+
     const isLogin = options.loginType === 'login'
     const isSignup = options.loginType === 'signup'
 
@@ -142,7 +151,8 @@ OAuth.startLogin = options => {
           ),
         },
       },
-      allowedConnections: options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
+      allowedConnections:
+        options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
       rememberLastLogin: true,
       languageDictionary: options.lock.languageDictionary,
       theme: {
@@ -164,5 +174,60 @@ OAuth.startLogin = options => {
     lock.show()
   } else {
     OAuth.launchLogin(options)
+  }
+}
+
+// Get cookie if external login
+function getCookie(name) {
+  // Split cookie string and get all individual name=value pairs in an array
+  var cookieArr = document.cookie.split(';')
+
+  // Loop through the array elements
+  for (var i = 0; i < cookieArr.length; i++) {
+    var cookiePair = cookieArr[i].split('=')
+
+    /* Removing whitespace at the beginning of the cookie name
+        and compare it with the given string */
+    if (name == cookiePair[0].trim()) {
+      // Decode the cookie value and return
+      return JSON.parse(decodeURIComponent(cookiePair[1]))
+    }
+  }
+
+  // Return null if not found
+  return null
+}
+
+const cookieMigrationData = getCookie(KEY_NAME)
+if (cookieMigrationData) {
+  document.cookie = KEY_NAME + '=; max-age=0'
+}
+
+// Overwrite getDataAfterRedirect to attempt to get oauth login data from cookie if session storage is empty
+OAuth.getDataAfterRedirect = () => {
+  let migrationData = Reload._migrationData('oauth')
+
+  // Check for migration data in cookie
+  if (!migrationData && cookieMigrationData) {
+    migrationData = cookieMigrationData.oauth
+  }
+
+  if (!(migrationData && migrationData.credentialToken)) return null
+
+  const { credentialToken } = migrationData
+  const key = OAuth._storageTokenPrefix + credentialToken
+  let credentialSecret
+
+  try {
+    credentialSecret = sessionStorage.getItem(key)
+    // sessionStorage.removeItem(key);
+  } catch (e) {
+    Meteor._debug('error retrieving credentialSecret', e)
+  }
+
+  return {
+    loginService: migrationData.loginService,
+    credentialToken,
+    credentialSecret,
   }
 }
