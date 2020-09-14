@@ -38,9 +38,7 @@ Meteor.loginWithAuth0 = function(options, callback) {
  */
 
 Auth0._loginStyle = function(config, options) {
-  return options.loginStyle === 'inline' && options.lock?.containerId > ''
-    ? 'inline'
-    : OAuth._loginStyle('auth0', config, options)
+  return options.loginStyle === 'inline' ? 'inline' : OAuth._loginStyle('auth0', config, options)
 }
 
 /**
