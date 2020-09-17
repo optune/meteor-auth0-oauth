@@ -169,6 +169,24 @@ OAuth.startLogin = options => {
       lockOptions
     )
 
+    // lock.checkSession(
+    //   {
+    //     responseType: 'token',
+    //   },
+    //   (error, result) => {
+    //     if (error) {
+    //       console.log('CHECK RESULT ERROR', error)
+    //     } else {
+    //       console.log('CHECK RESULT', result)
+    //       window.location = `${Meteor.absoluteUrl('_oauth/auth0')}?state=${OAuth._stateParam(
+    //         'redirect',
+    //         options.credentialToken,
+    //         `${Meteor.absoluteUrl('')}${options.loginPath}`
+    //       )}`
+    //     }
+    //   }
+    // )
+
     lock.show()
   } else {
     OAuth.launchLogin(options)
