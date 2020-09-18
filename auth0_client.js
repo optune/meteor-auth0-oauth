@@ -13,7 +13,9 @@ const KEY_NAME = 'Meteor_Reload'
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global (boilerplate).
  */
 
-Auth0 = {}
+Auth0 = {
+  lock: undefined,
+}
 
 Accounts.oauth.registerService('auth0')
 
@@ -163,12 +165,15 @@ OAuth.startLogin = options => {
       allowSignUp: isSignup,
     }
 
-    const lock = new Auth0Lock(
+    OAuth.closeLock(options)
+
+    OAuth.lock = new Auth0Lock(
       Meteor.settings.public.AUTH0_CLIENT_ID,
       Meteor.settings.public.AUTH0_DOMAIN,
       lockOptions
     )
 
+    // TEST (leave for now)
     // lock.checkSession(
     //   {
     //     responseType: 'token',
@@ -187,9 +192,23 @@ OAuth.startLogin = options => {
     //   }
     // )
 
-    lock.show()
+    OAuth.lock.show()
   } else {
     OAuth.launchLogin(options)
+  }
+}
+
+OAuth.closeLock = (options = {}) => {
+  OAuth.lock = undefined
+
+  if (options.lock && options.lock.containerId > '') {
+    // Get the container element
+    var container = document.getElementById(options.lock.containerId)
+
+    // As long as <ul> has a child node, remove it
+    if (container.hasChildNodes()) {
+      container.removeChild(container.firstChild)
+    }
   }
 }
 
