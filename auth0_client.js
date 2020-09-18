@@ -159,14 +159,16 @@ OAuth.startLogin = options => {
         logo: options.lock.logo,
         primaryColor: options.lock.primaryColor,
       },
-      closable: false,
+      closable: true,
       container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
     }
 
+    // Close (destroy) previous lock instance
     OAuth.closeLock(options)
 
+    // Create and configure new auth0 lock instance
     OAuth.lock = new Auth0Lock(
       Meteor.settings.public.AUTH0_CLIENT_ID,
       Meteor.settings.public.AUTH0_DOMAIN,
@@ -192,6 +194,12 @@ OAuth.startLogin = options => {
     //   }
     // )
 
+    // Remove location hash on close
+    OAuth.lock.on('hide', () => {
+      window.history.replaceState({}, document.title, '.')
+    })
+
+    // Show lock
     OAuth.lock.show()
   } else {
     OAuth.launchLogin(options)
@@ -206,7 +214,7 @@ OAuth.closeLock = (options = {}) => {
     var container = document.getElementById(options.lock.containerId)
 
     // As long as <ul> has a child node, remove it
-    if (container.hasChildNodes()) {
+    if (container && container.hasChildNodes()) {
       container.removeChild(container.firstChild)
     }
   }
