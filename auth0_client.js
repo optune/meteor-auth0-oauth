@@ -43,6 +43,16 @@ Auth0._loginStyle = function(config, options) {
   return options.loginStyle === 'inline' ? 'inline' : OAuth._loginStyle('auth0', config, options)
 }
 
+Auth0._rootUrl = function(options) {
+  let redirectUrl = Meteor.absoluteUrl('')
+
+  if (options.rootUrl > '') {
+    redirectUrl = options.rootUrl.endsWith('/') ? options.rootUrl : `${options.rootUrl}/`
+  }
+
+  return redirectUrl
+}
+
 /**
  * Request Auth0 credentials for the user (boilerplate).
  * Called from accounts-auth0.
@@ -82,10 +92,13 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
 
   // Detemines the login style
   const loginStyle = Auth0._loginStyle(config, options)
+  const rootUrl = Auth0._rootUrl(options)
+  const redirectUrl = `${rootUrl}_oauth/auth0`
 
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path.substring(1) : path
+  const callbackUrl = `${rootUrl}${path}`
 
   /**
    * Imgur requires response_type and client_id
@@ -102,11 +115,9 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     OAuth._stateParam(
       loginStyle === 'inline' ? 'redirect' : loginStyle,
       credentialToken,
-      `${Meteor.absoluteUrl('')}${path}`
+      callbackUrl
     ) +
-    // // '&connection=facebook' +
-
-    `&redirect_uri=${Meteor.absoluteUrl('_oauth/auth0')}`
+    `&redirect_uri=${redirectUrl}`
 
   if (options.type) {
     loginUrl = loginUrl + '#' + options.type
@@ -120,8 +131,9 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginStyle,
     loginUrl,
     loginPath: path,
-    loginDomain: Meteor.absoluteUrl(''),
     loginType: options.type,
+    redirectUrl,
+    callbackUrl,
     credentialRequestCompleteCallback,
     credentialToken,
     popupOptions: {
@@ -132,7 +144,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
 }
 
 OAuth.startLogin = options => {
-  if (!options.loginService) throw new Error('loginService required')
+  if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
     OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
@@ -142,13 +154,9 @@ OAuth.startLogin = options => {
 
     const lockOptions = {
       auth: {
-        redirectUrl: Meteor.absoluteUrl('_oauth/auth0'),
+        redirectUrl: options.redirectUrl,
         params: {
-          state: OAuth._stateParam(
-            'redirect',
-            options.credentialToken,
-            `${Meteor.absoluteUrl('')}${options.loginPath}`
-          ),
+          state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
         },
       },
       allowedConnections:
@@ -175,32 +183,28 @@ OAuth.startLogin = options => {
       lockOptions
     )
 
-    // TEST (leave for now)
-    // lock.checkSession(
-    //   {
-    //     responseType: 'token',
-    //   },
-    //   (error, result) => {
-    //     if (error) {
-    //       console.log('CHECK RESULT ERROR', error)
-    //     } else {
-    //       console.log('CHECK RESULT', result)
-    //       window.location = `${Meteor.absoluteUrl('_oauth/auth0')}?state=${OAuth._stateParam(
-    //         'redirect',
-    //         options.credentialToken,
-    //         `${Meteor.absoluteUrl('')}${options.loginPath}`
-    //       )}`
-    //     }
-    //   }
-    // )
+    // Check for active login session in Auth0 (silent autentication)
+    OAuth.lock.checkSession(
+      {
+        responseType: 'token',
+      },
+      (error, result) => {
+        if (error) {
+          console.log('👹 SILENT AUTHENTICATION FAILED --> Log in required')
+          // Show lock on error as user needs to sign in again
+          OAuth.lock.on('hide', () => {
+            window.history.replaceState({}, document.title, '.')
+          })
 
-    // Remove location hash on close
-    OAuth.lock.on('hide', () => {
-      window.history.replaceState({}, document.title, '.')
-    })
-
-    // Show lock
-    OAuth.lock.show()
+          // Show lock
+          OAuth.lock.show()
+        } else {
+          // Authenticate the user for the application
+          console.log('✅ SILENT AUTENTICATION SUCCESSFUL --> Redirect to application')
+          window.location = options.loginUrl + '&prompt=none'
+        }
+      }
+    )
   } else {
     OAuth.launchLogin(options)
   }
