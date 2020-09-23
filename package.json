@@ -1,4 +1,18 @@
 {
+  "scripts": {
+    "lint": "eslint --ext js,jsx .",
+    "prepush": "meteor npm run lint"
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 100
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://github.com/optune/meteor-auth0-oauth"
+  },
   "eslintConfig": {
     "parserOptions": {
       "ecmaFeatures": {
@@ -6,14 +20,16 @@
       }
     },
     "plugins": [
-      "meteor"
+      "meteor",
+      "prettier"
     ],
     "extends": [
-      "airbnb/base",
-      "plugin:meteor/guide"
+      "plugin:meteor/recommended",
+      "prettier"
     ],
     "rules": {
-      "max-lines": "warn"
+      "max-lines": "warn",
+      "prettier/prettier": "error"
     }
   },
   "keywords": [
@@ -25,8 +41,13 @@
   "license": "MIT",
   "homepage": "https://github.com/optune/meteor-auth0-oauth",
   "devDependencies": {
-    "eslint": "^2.7.0",
-    "eslint-config-airbnb": "^6.2.0",
-    "eslint-plugin-meteor": "^3.4.0"
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-meteor": "^6.0.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "prettier": "^1.19.1"
+  },
+  "dependencies": {
+    "auth0-lock": "^11.27.0"
   }
 }
