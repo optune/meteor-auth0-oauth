@@ -4,8 +4,6 @@ import { Meteor } from 'meteor/meteor'
 import { OAuth } from 'meteor/oauth'
 import { Accounts } from 'meteor/accounts-base'
 
-import { Auth0Lock } from 'auth0-lock'
-
 const KEY_NAME = 'Meteor_Reload'
 
 /**
@@ -143,7 +141,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   })
 }
 
-OAuth.startLogin = options => {
+OAuth.startLogin = async options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
@@ -175,6 +173,8 @@ OAuth.startLogin = options => {
 
     // Close (destroy) previous lock instance
     OAuth.closeLock(options)
+
+    const { Auth0Lock } = await import('auth0-lock')
 
     // Create and configure new auth0 lock instance
     OAuth.lock = new Auth0Lock(
