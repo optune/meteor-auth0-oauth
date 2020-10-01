@@ -78,6 +78,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   const config = {
     clientId: Meteor.settings.public.AUTH0_CLIENT_ID,
     hostname: Meteor.settings.public.AUTH0_DOMAIN,
+    clientConfigurationBaseUrl:
+      Meteor.settings.public.AUTH0_CLIENT_CONFIG_BASE_URL || 'https://cdn.eu.auth0.com/',
     loginStyle: 'redirect',
   }
 
@@ -125,6 +127,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Client initiates OAuth login request (boilerplate)
    */
   Oauth.startLogin({
+    clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     loginService: 'auth0',
     loginStyle,
     loginUrl,
@@ -137,7 +140,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     popupOptions: {
       height: 600,
     },
-    lock: options.lock || {},
+    lock: options.lock || {},
   })
 }
 
@@ -151,6 +154,7 @@ OAuth.startLogin = async options => {
     const isSignup = options.loginType === 'signup'
 
     const lockOptions = {
+      configurationBaseUrl: options.clientConfigurationBaseUrl,
       auth: {
         redirectUrl: options.redirectUrl,
         params: {
@@ -169,12 +173,15 @@ OAuth.startLogin = async options => {
       container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
+      signUpFieldsStrictValidation: true, // From email validation issue: https://github.com/auth0/lock/issues/1919
     }
+
+    console.log('OPTIONS', lockOptions)
 
     // Close (destroy) previous lock instance
     OAuth.closeLock(options)
 
-    const { Auth0Lock } = await import('auth0-lock')
+    const { Auth0Lock } = await import('auth0-lock')
 
     // Create and configure new auth0 lock instance
     OAuth.lock = new Auth0Lock(
