@@ -176,8 +176,6 @@ OAuth.startLogin = async options => {
       signUpFieldsStrictValidation: true, // From email validation issue: https://github.com/auth0/lock/issues/1919
     }
 
-    console.log('OPTIONS', lockOptions)
-
     // Close (destroy) previous lock instance
     OAuth.closeLock(options)
 
