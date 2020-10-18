@@ -194,6 +194,8 @@ OAuth.startLogin = async (options) => {
         responseType: 'token',
       },
       (error, result) => {
+        console.log('AUTH0 ERROR', error)
+        console.log('AUTH0 RESULT', result)
         if (error) {
           console.log('👹 SILENT AUTHENTICATION FAILED --> Log in required')
           // Show lock on error as user needs to sign in again
@@ -206,7 +208,6 @@ OAuth.startLogin = async (options) => {
         } else {
           // Authenticate the user for the application
           console.log('✅ SILENT AUTENTICATION SUCCESSFUL --> Redirect to application')
-          console.log('AUTH0 RESULT', result)
           const accessTokenQuery = new URLSearchParams(result)
           const loginUrl =
             options.redirectUrl +
