@@ -17,7 +17,7 @@ Auth0 = {
 
 Accounts.oauth.registerService('auth0')
 
-Meteor.loginWithAuth0 = function(options, callback) {
+Meteor.loginWithAuth0 = function (options, callback) {
   /**
    * support (options, callback) and (callback)
    */
@@ -37,11 +37,11 @@ Meteor.loginWithAuth0 = function(options, callback) {
  * Determine login style inclusive support for inline auth0 lock
  */
 
-Auth0._loginStyle = function(config, options) {
+Auth0._loginStyle = function (config, options) {
   return options.loginStyle === 'inline' ? 'inline' : OAuth._loginStyle('auth0', config, options)
 }
 
-Auth0._rootUrl = function(options) {
+Auth0._rootUrl = function (options) {
   let redirectUrl = Meteor.absoluteUrl('')
 
   if (options.rootUrl > '') {
@@ -61,7 +61,7 @@ Auth0._rootUrl = function(options) {
  *                                                        success, or Error on error.
  */
 
-Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
+Auth0.requestCredential = function (options, credentialRequestCompleteCallback) {
   /**
    * Support both (options, callback) and (callback).
    */
@@ -140,11 +140,11 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     popupOptions: {
       height: 600,
     },
-    lock: options.lock || {},
+    lock: options.lock || {},
   })
 }
 
-OAuth.startLogin = async options => {
+OAuth.startLogin = async (options) => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
@@ -206,7 +206,28 @@ OAuth.startLogin = async options => {
         } else {
           // Authenticate the user for the application
           console.log('✅ SILENT AUTENTICATION SUCCESSFUL --> Redirect to application')
-          window.location = options.loginUrl + '&prompt=none'
+          console.log('AUTH0 RESULT', result)
+          const accessTokenQuery = new URLSearchParams(result)
+          const loginUrl =
+            options.redirectUrl +
+            '?' +
+            accessTokenQuery +
+            '&type=token' +
+            '&state=' +
+            OAuth._stateParam('popup', options.credentialToken)
+          console.log('Login URL', loginUrl)
+
+          // Launch pop up with redirect url to oauth/auth0 path to login in without reloading the page
+          // OAuth.launchLogin({
+          //   loginStyle: 'popup',
+          //   loginUrl,
+          //   credentialToken: options.credentialToken,
+          //   popupOptions: {
+          //     width: 1,
+          //     height: 1,
+          //   },
+          //   credentialRequestCompleteCallback: options.credentialRequestCompleteCallback,
+          // })
         }
       }
     )
