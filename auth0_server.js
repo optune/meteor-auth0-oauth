@@ -96,8 +96,6 @@ OAuth.registerService('auth0', 2, null, function (query) {
    */
   const identity = _.extend({ username }, getAccount(config, username, accessToken))
 
-  console.log('IDENTITY', identity)
-
   /**
    * Build our serviceData object. This needs to contain
    *  accessToken
@@ -120,8 +118,6 @@ OAuth.registerService('auth0', 2, null, function (query) {
   _.extend(serviceData, identity)
 
   serviceData.id = identity.sub
-
-  console.log('SERVICE DATA', serviceData)
   
   /**
    * Return the serviceData object along with an options object containing
