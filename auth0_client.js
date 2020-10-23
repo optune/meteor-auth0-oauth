@@ -173,23 +173,37 @@ OAuth.startLogin = async (options) => {
       container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
-      signUpFieldsStrictValidation: true, // From email validation issue: https://github.com/auth0/lock/issues/1919
+      // Test
+      hashCleanup: false,
+      autoParseHash: false,
     }
 
     // Close (destroy) previous lock instance
-    OAuth.closeLock(options)
+    Auth0.closeLock(options)
 
     const { Auth0Lock } = await import('auth0-lock')
 
     // Create and configure new auth0 lock instance
-    OAuth.lock = new Auth0Lock(
+    Auth0.lock = new Auth0Lock(
       Meteor.settings.public.AUTH0_CLIENT_ID,
       Meteor.settings.public.AUTH0_DOMAIN,
       lockOptions
     )
 
+    Auth0.lock.resumeAuth(window.location.hash.split('?')[1], (error, authResult) => {
+      console.log('ERROR', error)
+      console.log('AUTH RESULT', authResult)
+    })
+
+    Auth0.lock.on('authenticated', (authResult) => {
+      console.log('AUTH RESULT', authResult)
+    })
+    Auth0.lock.on('authorization_error', (error) => {
+      console.log('ERROR', error)
+    })
+
     // Check for active login session in Auth0 (silent autentication)
-    OAuth.lock.checkSession(
+    /* Auth0.lock.checkSession(
       {
         responseType: 'token',
       },
@@ -199,12 +213,12 @@ OAuth.startLogin = async (options) => {
         if (error) {
           console.log('👹 SILENT AUTHENTICATION FAILED --> Log in required')
           // Show lock on error as user needs to sign in again
-          OAuth.lock.on('hide', () => {
+          Auth0.lock.on('hide', () => {
             window.history.replaceState({}, document.title, '.')
           })
 
           // Show lock
-          OAuth.lock.show()
+          Auth0.lock.show()
         } else {
           // Authenticate the user for the application
           console.log('✅ SILENT AUTENTICATION SUCCESSFUL --> Redirect to application')
@@ -231,14 +245,14 @@ OAuth.startLogin = async (options) => {
           // })
         }
       }
-    )
+    )*/
   } else {
     OAuth.launchLogin(options)
   }
 }
 
-OAuth.closeLock = (options = {}) => {
-  OAuth.lock = undefined
+Auth0.closeLock = (options = {}) => {
+  Auth0.lock = undefined
 
   if (options.lock && options.lock.containerId > '') {
     // Get the container element
@@ -294,7 +308,7 @@ OAuth.getDataAfterRedirect = () => {
 
   try {
     credentialSecret = sessionStorage.getItem(key)
-    // sessionStorage.removeItem(key);
+    sessionStorage.removeItem(key);
   } catch (e) {
     Meteor._debug('error retrieving credentialSecret', e)
   }
