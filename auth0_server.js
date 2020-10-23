@@ -13,7 +13,7 @@ Accounts.addAutopublishFields({
      * Logged in user gets whitelisted fields + accessToken + expiresAt.
      */
     Auth0.whitelistedFields.concat(['accessToken', 'expiresAt']), // don't publish refresh token
-    function(subfield) {
+    function (subfield) {
       return 'services.auth0.' + subfield
     }
   ),
@@ -24,7 +24,7 @@ Accounts.addAutopublishFields({
      * autopublish, no legitimate web app should be publishing all users' emails.
      */
     _.without(Auth0.whitelistedFields, 'email', 'verified_email'),
-    function(subfield) {
+    function (subfield) {
       return 'services.auth0.' + subfield
     }
   ),
@@ -43,6 +43,15 @@ Meteor.startup(() => {
   )
 })
 
+const getToken = function (authResponse) {
+  return {
+    accessToken: authResponse.access_token,
+    refreshToken: authResponse.refresh_token,
+    expiresIn: authResponse.expires_in,
+    username: authResponse.account_username,
+  }
+}
+
 /**
  * Boilerplate hook for use by underlying Meteor code
  */
@@ -59,7 +68,7 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  *  handleOauthRequest = function(query) returns {serviceData, options} where options is optional
  * serviceData will end up in the user's services.imgur
  */
-OAuth.registerService('auth0', 2, null, function(query) {
+OAuth.registerService('auth0', 2, null, function (query) {
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */
@@ -74,7 +83,7 @@ OAuth.registerService('auth0', 2, null, function(query) {
    * Get the token and username (Meteor handles the underlying authorization flow).
    * Note that the username comes from from this request in Imgur.
    */
-  const response = getTokens(config, query)
+  const response = query.type === 'token' ? getToken(query) : getTokens(config, query)
   const accessToken = response.accessToken
   const username = response.username
 
@@ -84,11 +93,7 @@ OAuth.registerService('auth0', 2, null, function(query) {
    * The identity object will contain the username plus *all* properties
    * retrieved from the account and settings methods.
    */
-  const identity = _.extend(
-    { username },
-    getAccount(config, username, accessToken)
-    // getSettings(config, username, accessToken)
-  )
+  const identity = _.extend({ username }, getAccount(config, username, accessToken))
 
   /**
    * Build our serviceData object. This needs to contain
@@ -112,7 +117,7 @@ OAuth.registerService('auth0', 2, null, function(query) {
   _.extend(serviceData, identity)
 
   serviceData.id = identity.sub
-
+  
   /**
    * Return the serviceData object along with an options object containing
    * the initial profile object with the username.
@@ -148,7 +153,8 @@ OAuth.registerService('auth0', 2, null, function(query) {
  * @param   {Object} query        The OAuth query object
  * @return  {Object}              The response from the token request (see above)
  */
-const getTokens = function(config, query) {
+
+const getTokens = function (config, query) {
   const endpoint = `https://${config.hostname}/oauth/token`
   /**
    * Attempt the exchange of code for token
@@ -189,12 +195,7 @@ const getTokens = function(config, query) {
      *
      * Return an appropriately constructed object
      */
-    return {
-      accessToken: response.data.access_token,
-      refreshToken: response.data.refresh_token,
-      expiresIn: response.data.expires_in,
-      username: response.data.account_username,
-    }
+    return getToken(response.data)
   }
 }
 
@@ -214,7 +215,7 @@ const getTokens = function(config, query) {
  * @param   {String} accessToken  The OAuth access token
  * @return  {Object}              The response from the account request (see above)
  */
-const getAccount = function(config, username, accessToken) {
+const getAccount = function (config, username, accessToken) {
   const endpoint = `https://${config.hostname}/userinfo`
   let accountObject
 

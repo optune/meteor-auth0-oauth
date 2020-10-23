@@ -17,7 +17,7 @@ Auth0 = {
 
 Accounts.oauth.registerService('auth0')
 
-Meteor.loginWithAuth0 = function(options, callback) {
+Meteor.loginWithAuth0 = function (options, callback) {
   /**
    * support (options, callback) and (callback)
    */
@@ -37,11 +37,11 @@ Meteor.loginWithAuth0 = function(options, callback) {
  * Determine login style inclusive support for inline auth0 lock
  */
 
-Auth0._loginStyle = function(config, options) {
+Auth0._loginStyle = function (config, options) {
   return options.loginStyle === 'inline' ? 'inline' : OAuth._loginStyle('auth0', config, options)
 }
 
-Auth0._rootUrl = function(options) {
+Auth0._rootUrl = function (options) {
   let redirectUrl = Meteor.absoluteUrl('')
 
   if (options.rootUrl > '') {
@@ -61,7 +61,7 @@ Auth0._rootUrl = function(options) {
  *                                                        success, or Error on error.
  */
 
-Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
+Auth0.requestCredential = function (options, credentialRequestCompleteCallback) {
   /**
    * Support both (options, callback) and (callback).
    */
@@ -140,11 +140,11 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     popupOptions: {
       height: 600,
     },
-    lock: options.lock || {},
+    lock: options.lock || {},
   })
 }
 
-OAuth.startLogin = async options => {
+OAuth.startLogin = async (options) => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
@@ -152,14 +152,19 @@ OAuth.startLogin = async options => {
 
     const isLogin = options.loginType === 'login'
     const isSignup = options.loginType === 'signup'
+    const nonce = Random.secret()
+    const params = {
+      state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
+      scope: 'openid',
+    }
 
     const lockOptions = {
       configurationBaseUrl: options.clientConfigurationBaseUrl,
       auth: {
         redirectUrl: options.redirectUrl,
-        params: {
-          state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
-        },
+        params,
+        nonce,
+        sso: true
       },
       allowedConnections:
         options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
@@ -169,44 +174,63 @@ OAuth.startLogin = async options => {
         logo: options.lock.logo,
         primaryColor: options.lock.primaryColor,
       },
+      avatar: null,
       closable: true,
       container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
-      signUpFieldsStrictValidation: true, // From email validation issue: https://github.com/auth0/lock/issues/1919
+      // Test
+      hashCleanup: false,
+      autoParseHash: false,
     }
 
     // Close (destroy) previous lock instance
-    OAuth.closeLock(options)
+    Auth0.closeLock(options)
 
     const { Auth0Lock } = await import('auth0-lock')
 
     // Create and configure new auth0 lock instance
-    OAuth.lock = new Auth0Lock(
+    Auth0.lock = new Auth0Lock(
       Meteor.settings.public.AUTH0_CLIENT_ID,
       Meteor.settings.public.AUTH0_DOMAIN,
       lockOptions
     )
 
     // Check for active login session in Auth0 (silent autentication)
-    OAuth.lock.checkSession(
+    Auth0.lock.checkSession(
       {
-        responseType: 'token',
+        responseType: 'token id_token',
+        params,
+        nonce, 
+        sso: true,
       },
       (error, result) => {
         if (error) {
-          console.log('👹 SILENT AUTHENTICATION FAILED --> Log in required')
           // Show lock on error as user needs to sign in again
-          OAuth.lock.on('hide', () => {
+          Auth0.lock.on('hide', () => {
             window.history.replaceState({}, document.title, '.')
           })
 
           // Show lock
-          OAuth.lock.show()
+          Auth0.lock.show()
         } else {
           // Authenticate the user for the application
-          console.log('✅ SILENT AUTENTICATION SUCCESSFUL --> Redirect to application')
-          window.location = options.loginUrl + '&prompt=none'
+          const accessTokenQueryData = {
+            access_token: result.accessToken,
+            refresh_token: result.refreshToken,
+            expires_in: result.expiresIn,
+          }
+          const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
+          const loginUrl =
+            options.redirectUrl +
+            '?' +
+            accessTokenQuery +
+            '&type=token' +
+            '&state=' +
+            OAuth._stateParam('redirect', options.credentialToken)
+
+          window.history.replaceState({}, document.title, '.')
+          window.location.href = loginUrl
         }
       }
     )
@@ -215,8 +239,8 @@ OAuth.startLogin = async options => {
   }
 }
 
-OAuth.closeLock = (options = {}) => {
-  OAuth.lock = undefined
+Auth0.closeLock = (options = {}) => {
+  Auth0.lock = undefined
 
   if (options.lock && options.lock.containerId > '') {
     // Get the container element
@@ -272,7 +296,7 @@ OAuth.getDataAfterRedirect = () => {
 
   try {
     credentialSecret = sessionStorage.getItem(key)
-    // sessionStorage.removeItem(key);
+    sessionStorage.removeItem(key);
   } catch (e) {
     Meteor._debug('error retrieving credentialSecret', e)
   }
