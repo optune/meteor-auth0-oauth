@@ -152,14 +152,19 @@ OAuth.startLogin = async (options) => {
 
     const isLogin = options.loginType === 'login'
     const isSignup = options.loginType === 'signup'
+    const nonce = Random.secret()
+    const params = {
+      state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
+      scope: 'openid',
+    }
 
     const lockOptions = {
       configurationBaseUrl: options.clientConfigurationBaseUrl,
       auth: {
         redirectUrl: options.redirectUrl,
-        params: {
-          state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
-        },
+        params,
+        nonce,
+        sso: true
       },
       allowedConnections:
         options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
@@ -169,6 +174,7 @@ OAuth.startLogin = async (options) => {
         logo: options.lock.logo,
         primaryColor: options.lock.primaryColor,
       },
+      avatar: null,
       closable: true,
       container: options.lock.containerId,
       allowLogin: isLogin,
@@ -190,22 +196,13 @@ OAuth.startLogin = async (options) => {
       lockOptions
     )
 
-    Auth0.lock.resumeAuth(window.location.hash.split('?')[1], (error, authResult) => {
-      console.log('ERROR', error)
-      console.log('AUTH RESULT', authResult)
-    })
-
-    Auth0.lock.on('authenticated', (authResult) => {
-      console.log('AUTH RESULT', authResult)
-    })
-    Auth0.lock.on('authorization_error', (error) => {
-      console.log('ERROR', error)
-    })
-
     // Check for active login session in Auth0 (silent autentication)
-    /* Auth0.lock.checkSession(
+    Auth0.lock.checkSession(
       {
-        responseType: 'token',
+        responseType: 'token id_token',
+        params,
+        nonce, 
+        sso: true,
       },
       (error, result) => {
         console.log('AUTH0 ERROR', error)
@@ -222,16 +219,23 @@ OAuth.startLogin = async (options) => {
         } else {
           // Authenticate the user for the application
           console.log('✅ SILENT AUTENTICATION SUCCESSFUL --> Redirect to application')
-          const accessTokenQuery = new URLSearchParams(result)
+          const accessTokenQueryData = {
+            access_token: result.accessToken,
+            refresh_token: result.refreshToken,
+            expires_in: result.expiresIn,
+          }
+          const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
           const loginUrl =
             options.redirectUrl +
             '?' +
             accessTokenQuery +
             '&type=token' +
             '&state=' +
-            OAuth._stateParam('popup', options.credentialToken)
+            OAuth._stateParam('redirect', options.credentialToken)
           console.log('Login URL', loginUrl)
 
+          window.history.replaceState({}, document.title, '.')
+          window.location.href = loginUrl
           // Launch pop up with redirect url to oauth/auth0 path to login in without reloading the page
           // OAuth.launchLogin({
           //   loginStyle: 'popup',
@@ -245,7 +249,7 @@ OAuth.startLogin = async (options) => {
           // })
         }
       }
-    )*/
+    )
   } else {
     OAuth.launchLogin(options)
   }
