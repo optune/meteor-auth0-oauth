@@ -69,7 +69,6 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  * serviceData will end up in the user's services.imgur
  */
 OAuth.registerService('auth0', 2, null, function (query) {
-  console.log('QUERY', query)
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */

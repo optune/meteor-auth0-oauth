@@ -205,10 +205,7 @@ OAuth.startLogin = async (options) => {
         sso: true,
       },
       (error, result) => {
-        console.log('AUTH0 ERROR', error)
-        console.log('AUTH0 RESULT', result)
         if (error) {
-          console.log('👹 SILENT AUTHENTICATION FAILED --> Log in required')
           // Show lock on error as user needs to sign in again
           Auth0.lock.on('hide', () => {
             window.history.replaceState({}, document.title, '.')
@@ -218,7 +215,6 @@ OAuth.startLogin = async (options) => {
           Auth0.lock.show()
         } else {
           // Authenticate the user for the application
-          console.log('✅ SILENT AUTENTICATION SUCCESSFUL --> Redirect to application')
           const accessTokenQueryData = {
             access_token: result.accessToken,
             refresh_token: result.refreshToken,
@@ -232,21 +228,9 @@ OAuth.startLogin = async (options) => {
             '&type=token' +
             '&state=' +
             OAuth._stateParam('redirect', options.credentialToken)
-          console.log('Login URL', loginUrl)
 
           window.history.replaceState({}, document.title, '.')
           window.location.href = loginUrl
-          // Launch pop up with redirect url to oauth/auth0 path to login in without reloading the page
-          // OAuth.launchLogin({
-          //   loginStyle: 'popup',
-          //   loginUrl,
-          //   credentialToken: options.credentialToken,
-          //   popupOptions: {
-          //     width: 1,
-          //     height: 1,
-          //   },
-          //   credentialRequestCompleteCallback: options.credentialRequestCompleteCallback,
-          // })
         }
       }
     )
