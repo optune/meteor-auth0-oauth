@@ -155,7 +155,7 @@ OAuth.startLogin = async (options) => {
     const nonce = Random.secret()
     const params = {
       state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
-      scope: 'openid',
+      scope: 'openid profile email',
     }
 
     const lockOptions = {
@@ -179,9 +179,6 @@ OAuth.startLogin = async (options) => {
       container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
-      // Test
-      hashCleanup: false,
-      autoParseHash: false,
     }
 
     // Close (destroy) previous lock instance
