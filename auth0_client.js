@@ -5,6 +5,7 @@ import { OAuth } from 'meteor/oauth'
 import { Accounts } from 'meteor/accounts-base'
 
 const KEY_NAME = 'Meteor_Reload'
+const SIGNUP_AS = '/_signup'
 
 /**
  * Define the base object namespace. By convention we use the service name
@@ -39,7 +40,7 @@ Meteor.loginWithAuth0 = function(options, callback) {
 
 Auth0._loginStyle = function(config, options) {
   return (
-    (options.path === '/impersonate' && 'redirect') ||
+    (options.path === SIGNUP_AS && 'redirect') ||
     (options.loginStyle === 'inline' && 'inline') ||
     OAuth._loginStyle('auth0', config, options)
   )
@@ -82,7 +83,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   const config = {
     clientId: Meteor.settings.public.AUTH0_CLIENT_ID,
     hostname:
-      (options.path === '/impersonate' && Meteor.settings.public.AUTH0_ORIGIN_DOMAIN) ||
+      (options.path === SIGNUP_AS && Meteor.settings.public.AUTH0_ORIGIN_DOMAIN) ||
       Meteor.settings.public.AUTH0_DOMAIN,
     clientConfigurationBaseUrl:
       Meteor.settings.public.AUTH0_CLIENT_CONFIG_BASE_URL || 'https://cdn.eu.auth0.com/',
@@ -97,7 +98,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   const credentialToken = Random.secret()
 
   // Detemines the login style
-  const loginStyle = Auth0._loginStyle(config, options, isSigninAsUser)
+  const loginStyle = Auth0._loginStyle(config, options)
   const rootUrl = Auth0._rootUrl(options)
   const redirectUrl = `${rootUrl}_oauth/auth0`
 
