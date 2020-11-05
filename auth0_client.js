@@ -5,6 +5,7 @@ import { OAuth } from 'meteor/oauth'
 import { Accounts } from 'meteor/accounts-base'
 
 const KEY_NAME = 'Meteor_Reload'
+const SIGNUP_AS = '/_signup'
 
 /**
  * Define the base object namespace. By convention we use the service name
@@ -17,7 +18,7 @@ Auth0 = {
 
 Accounts.oauth.registerService('auth0')
 
-Meteor.loginWithAuth0 = function (options, callback) {
+Meteor.loginWithAuth0 = function(options, callback) {
   /**
    * support (options, callback) and (callback)
    */
@@ -37,11 +38,15 @@ Meteor.loginWithAuth0 = function (options, callback) {
  * Determine login style inclusive support for inline auth0 lock
  */
 
-Auth0._loginStyle = function (config, options) {
-  return options.loginStyle === 'inline' ? 'inline' : OAuth._loginStyle('auth0', config, options)
+Auth0._loginStyle = function(config, options) {
+  return (
+    (options.path === SIGNUP_AS && 'redirect') ||
+    (options.loginStyle === 'inline' && 'inline') ||
+    OAuth._loginStyle('auth0', config, options)
+  )
 }
 
-Auth0._rootUrl = function (options) {
+Auth0._rootUrl = function(options) {
   let redirectUrl = Meteor.absoluteUrl('')
 
   if (options.rootUrl > '') {
@@ -61,7 +66,7 @@ Auth0._rootUrl = function (options) {
  *                                                        success, or Error on error.
  */
 
-Auth0.requestCredential = function (options, credentialRequestCompleteCallback) {
+Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   /**
    * Support both (options, callback) and (callback).
    */
@@ -77,7 +82,9 @@ Auth0.requestCredential = function (options, credentialRequestCompleteCallback) 
    */
   const config = {
     clientId: Meteor.settings.public.AUTH0_CLIENT_ID,
-    hostname: Meteor.settings.public.AUTH0_DOMAIN,
+    hostname:
+      (options.path === SIGNUP_AS && Meteor.settings.public.AUTH0_ORIGIN_DOMAIN) ||
+      Meteor.settings.public.AUTH0_DOMAIN,
     clientConfigurationBaseUrl:
       Meteor.settings.public.AUTH0_CLIENT_CONFIG_BASE_URL || 'https://cdn.eu.auth0.com/',
     loginStyle: 'redirect',
@@ -144,7 +151,7 @@ Auth0.requestCredential = function (options, credentialRequestCompleteCallback) 
   })
 }
 
-OAuth.startLogin = async (options) => {
+OAuth.startLogin = async options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
@@ -164,7 +171,7 @@ OAuth.startLogin = async (options) => {
         redirectUrl: options.redirectUrl,
         params,
         nonce,
-        sso: true
+        sso: true,
       },
       allowedConnections:
         options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
@@ -198,7 +205,7 @@ OAuth.startLogin = async (options) => {
       {
         responseType: 'token id_token',
         params,
-        nonce, 
+        nonce,
         sso: true,
       },
       (error, result) => {
@@ -293,7 +300,7 @@ OAuth.getDataAfterRedirect = () => {
 
   try {
     credentialSecret = sessionStorage.getItem(key)
-    sessionStorage.removeItem(key);
+    sessionStorage.removeItem(key)
   } catch (e) {
     Meteor._debug('error retrieving credentialSecret', e)
   }
