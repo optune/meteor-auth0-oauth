@@ -204,9 +204,7 @@ OAuth.startLogin = async options => {
     Auth0.lock.checkSession(
       {
         responseType: 'token id_token',
-        params,
         nonce,
-        sso: true,
       },
       (error, result) => {
         if (error) {
