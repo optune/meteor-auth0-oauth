@@ -1,11 +1,19 @@
+import { Meteor } from 'meteor/meteor'
+import { Accounts } from 'meteor/accounts-base'
+import { OAuth } from 'meteor/oauth'
+
+import { OAuthInline } from './oauth_inline_server'
+
 /**
  * Define the base object namespace. By convention we use the service name
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global.
  */
+
 Auth0 = {}
-Accounts.oauth.registerService('auth0')
 
 Auth0.whitelistedFields = ['id', 'email', 'picture', 'name']
+
+Accounts.oauth.registerService('auth0')
 
 Accounts.addAutopublishFields({
   forLoggedInUser: _.map(
@@ -68,7 +76,7 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  *  handleOauthRequest = function(query) returns {serviceData, options} where options is optional
  * serviceData will end up in the user's services.imgur
  */
-OAuth.registerService('auth0', 2, null, function (query) {
+OAuthInline.registerService('auth0', 2, null, function (query) {
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */

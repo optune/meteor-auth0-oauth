@@ -2,10 +2,9 @@
 
 import { Meteor } from 'meteor/meteor'
 import { OAuth } from 'meteor/oauth'
-import { OAuthInline } from 'optune:oauth-inline'
 import { Accounts } from 'meteor/accounts-base'
 
-const KEY_NAME = 'Meteor_Reload'
+import { OAuthInline } from './oauth_inline_client'
 
 /**
  * Define the base object namespace. By convention we use the service name
@@ -26,6 +25,8 @@ Meteor.loginWithAuth0 = function (options, callback) {
     callback = options
     options = null
   }
+
+  options.callback = callback
 
   /**
    *
@@ -107,7 +108,7 @@ Auth0.requestCredential = function (options, credentialRequestCompleteCallback) 
    */
 
   const state = OAuth._stateParam(
-    loginStyle === 'inline' ? 'redirect' : loginStyle,
+    loginStyle,
     credentialToken,
     callbackUrl
   )
@@ -129,7 +130,7 @@ Auth0.requestCredential = function (options, credentialRequestCompleteCallback) 
   /**
    * Client initiates OAuth login request (boilerplate)
    */
-  Oauth.startLogin({
+  Auth0.startLogin({
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     loginService: 'auth0',
     loginStyle,
@@ -138,6 +139,7 @@ Auth0.requestCredential = function (options, credentialRequestCompleteCallback) 
     loginType: options.type,
     redirectUrl,
     callbackUrl,
+    callback: options.callback,
     credentialRequestCompleteCallback,
     credentialToken,
     rootUrl,
@@ -149,95 +151,11 @@ Auth0.requestCredential = function (options, credentialRequestCompleteCallback) 
   })
 }
 
-OAuth.startLogin = (options) => {
+Auth0.startLogin = (options) => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
-    OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
-
-    OAuthInline.launchLogin(options)
-    // const isLogin = options.loginType === 'login'
-    // const isSignup = options.loginType === 'signup'
-
-    // const nonce = Random.secret()
-    // const params = {
-    //   state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
-    //   scope: 'openid profile email',
-    // }
-
-    // const lockOptions = {
-    //   configurationBaseUrl: options.clientConfigurationBaseUrl,
-    //   auth: {
-    //     redirectUrl: options.redirectUrl,
-    //     params,
-    //     nonce,
-    //     sso: true
-    //   },
-    //   allowedConnections:
-    //     options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
-    //   rememberLastLogin: true,
-    //   languageDictionary: options.lock.languageDictionary,
-    //   theme: {
-    //     logo: options.lock.logo,
-    //     primaryColor: options.lock.primaryColor,
-    //   },
-    //   avatar: null,
-    //   closable: true,
-    //   container: options.lock.containerId,
-    //   allowLogin: isLogin,
-    //   allowSignUp: isSignup,
-    // }
-
-    // // Close (destroy) previous lock instance
-    // Auth0.closeLock(options)
-
-    // const { Auth0Lock } = await import('auth0-lock')
-
-    // // Create and configure new auth0 lock instance
-    // Auth0.lock = new Auth0Lock(
-    //   Meteor.settings.public.AUTH0_CLIENT_ID,
-    //   Meteor.settings.public.AUTH0_DOMAIN,
-    //   lockOptions
-    // )
-
-    // // Check for active login session in Auth0 (silent autentication)
-    // Auth0.lock.checkSession(
-    //   {
-    //     responseType: 'token id_token',
-    //     params,
-    //     nonce,
-    //     sso: true,
-    //   },
-    //   (error, result) => {
-    //     if (error) {
-    //       // Show lock on error as user needs to sign in again
-    //       Auth0.lock.on('hide', () => {
-    //         window.history.replaceState({}, document.title, '.')
-    //       })
-
-    //       // Show lock
-    //       Auth0.lock.show()
-    //     } else {
-    //       // Authenticate the user for the application
-    //       const accessTokenQueryData = {
-    //         access_token: result.accessToken,
-    //         refresh_token: result.refreshToken,
-    //         expires_in: result.expiresIn,
-    //       }
-    //       const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
-    //       const loginUrl =
-    //         options.redirectUrl +
-    //         '?' +
-    //         accessTokenQuery +
-    //         '&type=token' +
-    //         '&state=' +
-    //         OAuth._stateParam('redirect', options.credentialToken)
-
-    //       window.history.replaceState({}, document.title, '.')
-    //       window.location.href = loginUrl
-    //     }
-    //   }
-    // )
+    OAuthInline.showInlineLoginForm(options)
   } else {
     OAuth.launchLogin(options)
   }
@@ -257,57 +175,4 @@ Auth0.closeLock = (options = {}) => {
   }
 }
 
-// Get cookie if external login
-function getCookie(name) {
-  // Split cookie string and get all individual name=value pairs in an array
-  var cookieArr = document.cookie.split(';')
 
-  // Loop through the array elements
-  for (var i = 0; i < cookieArr.length; i++) {
-    var cookiePair = cookieArr[i].split('=')
-
-    /* Removing whitespace at the beginning of the cookie name
-        and compare it with the given string */
-    if (name == cookiePair[0].trim()) {
-      // Decode the cookie value and return
-      return JSON.parse(decodeURIComponent(cookiePair[1]))
-    }
-  }
-
-  // Return null if not found
-  return null
-}
-
-const cookieMigrationData = getCookie(KEY_NAME)
-if (cookieMigrationData) {
-  document.cookie = KEY_NAME + '=; max-age=0'
-}
-
-// Overwrite getDataAfterRedirect to attempt to get oauth login data from cookie if session storage is empty
-OAuth.getDataAfterRedirect = () => {
-  let migrationData = Reload._migrationData('oauth')
-
-  // Check for migration data in cookie
-  if (!migrationData && cookieMigrationData) {
-    migrationData = cookieMigrationData.oauth
-  }
-
-  if (!(migrationData && migrationData.credentialToken)) return null
-
-  const { credentialToken } = migrationData
-  const key = OAuth._storageTokenPrefix + credentialToken
-  let credentialSecret
-
-  try {
-    credentialSecret = sessionStorage.getItem(key)
-    sessionStorage.removeItem(key)
-  } catch (e) {
-    Meteor._debug('error retrieving credentialSecret', e)
-  }
-
-  return {
-    loginService: migrationData.loginService,
-    credentialToken,
-    credentialSecret,
-  }
-}
