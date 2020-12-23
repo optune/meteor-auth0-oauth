@@ -79,9 +79,7 @@ Auth0Inline.launchLock = function ({ containerId, config }) {
     Auth0Inline.lock.checkSession(
       {
         responseType: 'token id_token',
-        params,
         nonce,
-        sso: true,
       },
       function (error, result) {
         if (error) {
