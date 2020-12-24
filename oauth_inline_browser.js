@@ -73,6 +73,7 @@ export const showInlineLoginForm = (options) => {
     const iFrameSourceUrl = options.rootUrl + '_oauth_inline/auth0/form?' + iFrameQuery
     iFrame = document.createElement('iframe')
     iFrame.setAttribute('src', iFrameSourceUrl)
+    iFrame.classList.add(options.lock.containerId + '__widget' )
     iFrame.setAttribute('width', '100%')
     iFrame.setAttribute('height', '100%')
     loginElement.appendChild(iFrame)
