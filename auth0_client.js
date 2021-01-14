@@ -6,6 +6,7 @@ import { Accounts } from 'meteor/accounts-base'
 
 import { OAuthInline } from './oauth_inline_client'
 
+const KEY_NAME = 'Meteor_Reload'
 const SIGNUP_AS = '/_signup'
 
 /**
