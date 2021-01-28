@@ -29,6 +29,21 @@ Auth0Inline.closeLock = function (containerId) {
   }
 }
 
+Auth0Inline.onAuthenticated = function (result, redirectUrl) {
+  console.log('AUTHENTICATED', result)
+
+  // Authenticate the user for the application
+  const accessTokenQueryData = {
+    access_token: result.accessToken,
+    refresh_token: result.refreshToken,
+    expires_in: result.expiresIn,
+  }
+  const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
+  const loginUrl = redirectUrl + '?' + accessTokenQuery + '&type=token' + '&state=' + result.state
+
+  window.location.href = loginUrl
+}
+
 Auth0Inline.launchLock = function ({ containerId, config }) {
   // var { credentialToken, loginType, lock, redirectUrl, state, nonce, loginPath } = config
 
@@ -47,6 +62,7 @@ Auth0Inline.launchLock = function ({ containerId, config }) {
       auth: {
         redirect: false,
         redirectUrl: config.redirectUrl,
+        responseType: 'token id_token',
         params,
         nonce,
         sso: true,
@@ -76,6 +92,10 @@ Auth0Inline.launchLock = function ({ containerId, config }) {
       lockOptions
     )
 
+    Auth0Inline.lock.on('authenticated', (result) => {
+      Auth0Inline.onAuthenticated(result, config.redirectUrl)
+    })
+
     // Check for active login session in Auth0 (silent autentication)
     Auth0Inline.lock.checkSession(
       {
@@ -92,17 +112,7 @@ Auth0Inline.launchLock = function ({ containerId, config }) {
           // Show lock
           Auth0Inline.lock.show()
         } else {
-          // Authenticate the user for the application
-          const accessTokenQueryData = {
-            access_token: result.accessToken,
-            refresh_token: result.refreshToken,
-            expires_in: result.expiresIn,
-          }
-          const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
-          const loginUrl =
-            config.redirectUrl + '?' + accessTokenQuery + '&type=token' + '&state=' + config.state
-
-          window.location.href = loginUrl
+          Auth0Inline.onAuthenticated(result, config.redirectUrl)
         }
       }
     )
