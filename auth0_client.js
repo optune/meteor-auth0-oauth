@@ -168,7 +168,8 @@ OAuth.startLogin = async options => {
     const lockOptions = {
       configurationBaseUrl: options.clientConfigurationBaseUrl,
       auth: {
-        redirectUrl: options.redirectUrl,
+        // redirectUrl: options.redirectUrl,
+        responseType: 'token id_token',
         params,
         nonce,
         sso: true,
