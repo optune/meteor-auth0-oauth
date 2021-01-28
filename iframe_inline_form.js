@@ -45,6 +45,7 @@ Auth0Inline.launchLock = function ({ containerId, config }) {
     var lockOptions = {
       configurationBaseUrl: config.settings.AUTH0_CLIENT_CONFIG_BASE_URL,
       auth: {
+        redirect: false,
         redirectUrl: config.redirectUrl,
         params,
         nonce,
