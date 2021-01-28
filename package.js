@@ -1,12 +1,12 @@
 Package.describe({
   name: 'optune:auth0-oauth',
-  version: '0.0.1',
-  summary: 'OAuth handler for Auth0',
+  version: '1.0.0',
+  summary: 'OAuth handler for Auth0 with Meteor Accounts including support for inline lock widget',
   documentation: 'README.md',
 })
 
 Package.onUse(function(api) {
-  api.versionsFrom('1.3')
+  api.versionsFrom('1.8')
   api.use('ecmascript')
   api.use('oauth2', ['client', 'server'])
   api.use('oauth', ['client', 'server'])
@@ -18,8 +18,12 @@ Package.onUse(function(api) {
   // Export Accounts (etc) to packages using this one.
   api.imply('accounts-base', ['client', 'server'])
 
-  api.export('Auth0')
-
+  api.addFiles('auth0_client.js', 'web')
   api.addFiles('auth0_server.js', 'server')
-  api.addFiles('auth0_client.js', 'client')
+  api.addFiles('oauth_inline_server.js', 'server')
+
+  api.addAssets(['end_of_inline_form_response.html'], 'server')
+  api.addAssets(['end_of_inline_form_response.js'], 'client')
+
+  api.export('Auth0')
 })
