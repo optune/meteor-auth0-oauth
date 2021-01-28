@@ -9,7 +9,7 @@ const getOrigin = rootUrl => {
   return rootUrl.endsWith('/') ? rootUrl.substr(0, rootUrl.length - 1) : rootUrl
 }
 
-AuthInline.showLock = async options => {
+Auth0Inline.showLock = async options => {
   OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
 
   const isLogin = options.loginType === 'login'
@@ -23,7 +23,7 @@ AuthInline.showLock = async options => {
   const lockOptions = {
     configurationBaseUrl: options.clientConfigurationBaseUrl,
     auth: {
-      // redirectUrl: options.redirectUrl,
+      redirect: false,
       responseType: 'token id_token',
       params,
       nonce,
@@ -58,7 +58,7 @@ AuthInline.showLock = async options => {
 
   // Authenticate the user in Meteor
   Auth0Inline.lock.on('authenticated', result => {
-    Auth0Inline.onAuthenticated(result, config.redirectUrl)
+    Auth0Inline.onAuthenticated(result, options)
   })
 
   // Check for active login session in Auth0 (silent autentication)
@@ -78,7 +78,7 @@ AuthInline.showLock = async options => {
         Auth0Inline.lock.show()
       } else {
         // Authenticate the user in Meteor
-        Auth0Inline.onAuthenticated(result, config.redirectUrl)
+        Auth0Inline.onAuthenticated(result, options)
 
         // const accessTokenQueryData = {
         //   access_token: result.accessToken,
@@ -102,7 +102,7 @@ AuthInline.showLock = async options => {
 }
 
 Auth0Inline.onAuthenticated = (result, options) => {
-  console.log('AUTHENTICATED', result)
+  console.log('AUTHENTICATED', result, options)
 
   // Get lock container element
   const lockContainer = document.getElementById(options.lock.containerId)
@@ -146,20 +146,19 @@ Auth0Inline.onAuthenticated = (result, options) => {
       refresh_token: result.refreshToken,
       expires_in: result.expiresIn,
       state: result.state,
-      tpye: 'token',
+      type: 'token',
     }
     const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
 
-    const iFrameSourceUrl = options.rootUrl + '_oauth_inline/auth0?' + accessTokenQuery
+    const iFrameSourceUrl = options.redirectUrl + '?' + accessTokenQuery
     iFrame = document.createElement('iframe')
     iFrame.setAttribute('src', iFrameSourceUrl)
-    iFrame.classList.add(options.lock.containerId + '__widget')
     iFrame.setAttribute('width', '0')
     iFrame.setAttribute('height', '0')
     lockContainer.appendChild(iFrame)
 
     // Remove login or signup hash from url
-    window.history.replaceState({}, document.title, '.')
+    // window.history.replaceState({}, document.title, '.')
   }
 }
 

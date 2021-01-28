@@ -100,7 +100,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Detemines the login style
   const loginStyle = Auth0._loginStyle(config, options)
   const rootUrl = Auth0._rootUrl(options)
-  const redirectUrl = `${rootUrl}_oauth/auth0`
+  const redirectUrl = `${rootUrl}${loginStyle === 'inline' ? '_oauth_inline' : '_oauth'}/auth0`
 
   // Determine path
   let path = options.path || ''
@@ -134,29 +134,25 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Client initiates OAuth login request (boilerplate)
    */
   Oauth.startLogin({
-    clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
-    loginService: 'auth0',
-    loginStyle,
-    loginUrl,
-    loginPath: path,
-    loginType: options.type,
-    redirectUrl,
     callbackUrl,
+    clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     credentialRequestCompleteCallback,
     credentialToken,
-    popupOptions: {
-      height: 600,
-    },
     lock: options.lock || {},
+    loginPath: path,
+    loginService: 'auth0',
+    loginStyle,
+    loginType: options.type,
+    loginUrl,
+    popupOptions: config.popupOptions || { height: 600 },
+    redirectUrl,
   })
 }
-
 
 OAuth.startLogin = async options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
-
     Auth0Inline.showLock(options)
     // const isLogin = options.loginType === 'login'
     // const isSignup = options.loginType === 'signup'
@@ -249,7 +245,6 @@ OAuth.startLogin = async options => {
     OAuth.launchLogin(options)
   }
 }
-
 
 // Get cookie if external login
 function getCookie(name) {
