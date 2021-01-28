@@ -4,6 +4,8 @@ import { Meteor } from 'meteor/meteor'
 import { OAuth } from 'meteor/oauth'
 import { Accounts } from 'meteor/accounts-base'
 
+import { Auth0Inline } from './auth0_inline'
+
 const KEY_NAME = 'Meteor_Reload'
 const SIGNUP_AS = '/_signup'
 
@@ -12,9 +14,7 @@ const SIGNUP_AS = '/_signup'
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global (boilerplate).
  */
 
-Auth0 = {
-  lock: undefined,
-}
+Auth0 = {}
 
 Accounts.oauth.registerService('auth0')
 
@@ -151,110 +151,105 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   })
 }
 
+
 OAuth.startLogin = async options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
-    OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
 
-    const isLogin = options.loginType === 'login'
-    const isSignup = options.loginType === 'signup'
-    const nonce = Random.secret()
-    const params = {
-      state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
-      scope: 'openid profile email',
-    }
+    Auth0Inline.showLock(options)
+    // const isLogin = options.loginType === 'login'
+    // const isSignup = options.loginType === 'signup'
+    // const nonce = Random.secret()
+    // const params = {
+    //   state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
+    //   scope: 'openid profile email',
+    // }
 
-    const lockOptions = {
-      configurationBaseUrl: options.clientConfigurationBaseUrl,
-      auth: {
-        // redirectUrl: options.redirectUrl,
-        responseType: 'token id_token',
-        params,
-        nonce,
-        sso: true,
-      },
-      allowedConnections:
-        options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
-      rememberLastLogin: true,
-      languageDictionary: options.lock.languageDictionary,
-      theme: {
-        logo: options.lock.logo,
-        primaryColor: options.lock.primaryColor,
-      },
-      avatar: null,
-      closable: true,
-      container: options.lock.containerId,
-      allowLogin: isLogin,
-      allowSignUp: isSignup,
-    }
+    // const lockOptions = {
+    //   configurationBaseUrl: options.clientConfigurationBaseUrl,
+    //   auth: {
+    //     // redirectUrl: options.redirectUrl,
+    //     responseType: 'token id_token',
+    //     params,
+    //     nonce,
+    //     sso: true,
+    //   },
+    //   allowedConnections:
+    //     options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
+    //   rememberLastLogin: true,
+    //   languageDictionary: options.lock.languageDictionary,
+    //   theme: {
+    //     logo: options.lock.logo,
+    //     primaryColor: options.lock.primaryColor,
+    //   },
+    //   avatar: null,
+    //   closable: true,
+    //   container: options.lock.containerId,
+    //   allowLogin: isLogin,
+    //   allowSignUp: isSignup,
+    // }
 
-    // Close (destroy) previous lock instance
-    Auth0.closeLock(options)
+    // // Close (destroy) previous lock instance
+    // Auth0.closeLock(options)
 
-    const { Auth0Lock } = await import('auth0-lock')
+    // const { Auth0Lock } = await import('auth0-lock')
 
-    // Create and configure new auth0 lock instance
-    Auth0.lock = new Auth0Lock(
-      Meteor.settings.public.AUTH0_CLIENT_ID,
-      Meteor.settings.public.AUTH0_DOMAIN,
-      lockOptions
-    )
+    // // Create and configure new auth0 lock instance
+    // Auth0.lock = new Auth0Lock(
+    //   Meteor.settings.public.AUTH0_CLIENT_ID,
+    //   Meteor.settings.public.AUTH0_DOMAIN,
+    //   lockOptions
+    // )
 
-    // Check for active login session in Auth0 (silent autentication)
-    Auth0.lock.checkSession(
-      {
-        responseType: 'token id_token',
-        nonce,
-      },
-      (error, result) => {
-        if (error) {
-          // Show lock on error as user needs to sign in again
-          Auth0.lock.on('hide', () => {
-            window.history.replaceState({}, document.title, '.')
-          })
+    // // Authenticate the user in Meteor
+    // Auth0.lock.on('authenticated', result => {
+    //   Auth0.onAuthenticated(result, config.redirectUrl)
+    // })
 
-          // Show lock
-          Auth0.lock.show()
-        } else {
-          // Authenticate the user for the application
-          const accessTokenQueryData = {
-            access_token: result.accessToken,
-            refresh_token: result.refreshToken,
-            expires_in: result.expiresIn,
-          }
-          const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
-          const loginUrl =
-            options.redirectUrl +
-            '?' +
-            accessTokenQuery +
-            '&type=token' +
-            '&state=' +
-            OAuth._stateParam('redirect', options.credentialToken)
+    // // Check for active login session in Auth0 (silent autentication)
+    // Auth0.lock.checkSession(
+    //   {
+    //     responseType: 'token id_token',
+    //     nonce,
+    //   },
+    //   (error, result) => {
+    //     if (error) {
+    //       // Show lock on error as user needs to sign in again
+    //       Auth0.lock.on('hide', () => {
+    //         window.history.replaceState({}, document.title, '.')
+    //       })
 
-          window.history.replaceState({}, document.title, '.')
-          window.location.href = loginUrl
-        }
-      }
-    )
+    //       // Show lock
+    //       Auth0.lock.show()
+    //     } else {
+    //       // Authenticate the user in Meteor
+    //       Auth0.onAuthenticated(result, config.redirectUrl)
+
+    //       // const accessTokenQueryData = {
+    //       //   access_token: result.accessToken,
+    //       //   refresh_token: result.refreshToken,
+    //       //   expires_in: result.expiresIn,
+    //       // }
+    //       // const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
+    //       // const loginUrl =
+    //       //   options.redirectUrl +
+    //       //   '?' +
+    //       //   accessTokenQuery +
+    //       //   '&type=token' +
+    //       //   '&state=' +
+    //       //   OAuth._stateParam('redirect', options.credentialToken)
+
+    //       // window.history.replaceState({}, document.title, '.')
+    //       // window.location.href = loginUrl
+    //     }
+    //   }
+    // )
   } else {
     OAuth.launchLogin(options)
   }
 }
 
-Auth0.closeLock = (options = {}) => {
-  Auth0.lock = undefined
-
-  if (options.lock && options.lock.containerId > '') {
-    // Get the container element
-    var container = document.getElementById(options.lock.containerId)
-
-    // As long as <ul> has a child node, remove it
-    if (container && container.hasChildNodes()) {
-      container.removeChild(container.firstChild)
-    }
-  }
-}
 
 // Get cookie if external login
 function getCookie(name) {
