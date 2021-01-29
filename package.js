@@ -22,7 +22,8 @@ Package.onUse(function(api) {
   api.addFiles('auth0_server.js', 'server')
   api.addFiles('oauth_inline_server.js', 'server')
 
-  api.addAssets(['end_of_inline_form_response.html', 'end_of_inline_form_response.js'], 'server')
+  api.addAssets(['end_of_inline_form_response.html'], 'server')
+  api.addAssets(['end_of_inline_form_response.js'], 'client')
 
   api.export('Auth0')
 })

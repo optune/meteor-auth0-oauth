@@ -16,7 +16,7 @@ Auth0Inline.showLock = async options => {
   const isSignup = options.loginType === 'signup'
   const nonce = Random.secret()
   const params = {
-    state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
+    state: OAuth._stateParam('inline', options.credentialToken, options.callbackUrl),
     scope: 'openid profile email',
   }
 
@@ -85,8 +85,6 @@ Auth0Inline.showLock = async options => {
 }
 
 Auth0Inline.onAuthenticated = (result, options) => {
-  console.log('AUTHENTICATED', result.accessToken)
-
   options.authenticatedCallback?.()
 
   // Get lock container element
@@ -98,28 +96,28 @@ Auth0Inline.onAuthenticated = (result, options) => {
      * Add message event listener for auth0 response from iFrame
      */
 
-    // window.addEventListener(
-    //   'message',
-    //   event => {
-    //     if (event.data.type === 'AUTH0_RESPONSE') {
-    //       lockContainer.removeChild(iFrame)
+    window.addEventListener(
+      'message',
+      event => {
+        if (event.data.type === 'AUTH0_RESPONSE') {
+          lockContainer.removeChild(iFrame)
 
-    //       const origin = getOrigin(options.rootUrl || Meteor.absoluteUrl(''))
+          const origin = getOrigin(options.rootUrl || Meteor.absoluteUrl(''))
 
-    //       if (event.origin === origin) {
-    //         const { credentialSecret, credentialToken } = event.data
+          if (event.origin === origin) {
+            const { credentialSecret, credentialToken } = event.data
 
-    //         Accounts.callLoginMethod({
-    //           methodArguments: [{ oauth: { credentialToken, credentialSecret } }],
-    //           userCallback: options.callback && (err => options.callback(convertError(err))),
-    //         })
-    //       } else {
-    //         // Log missmatching origin
-    //       }
-    //     }
-    //   },
-    //   false
-    // )
+            Accounts.callLoginMethod({
+              methodArguments: [{ oauth: { credentialToken, credentialSecret } }],
+              userCallback: options.callback && (err => options.callback(convertError(err))),
+            })
+          } else {
+            // Log missmatching origin
+          }
+        }
+      },
+      false
+    )
 
     /*
      * Add iframe with autentication url for Meteor
@@ -136,7 +134,6 @@ Auth0Inline.onAuthenticated = (result, options) => {
     const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
 
     const iFrameSourceUrl = options.redirectUrl + '?' + accessTokenQuery
-    console.log('REDIRECT URL', iFrameSourceUrl)
     iFrame = document.createElement('iframe')
     iFrame.setAttribute('src', iFrameSourceUrl)
     iFrame.setAttribute('width', '0')
