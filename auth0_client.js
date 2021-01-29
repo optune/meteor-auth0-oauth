@@ -134,6 +134,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Client initiates OAuth login request (boilerplate)
    */
   Oauth.startLogin({
+    authenticatedCallback: options.authenticatedCallback,
     callbackUrl,
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     credentialRequestCompleteCallback,
@@ -154,93 +155,6 @@ OAuth.startLogin = async options => {
 
   if (options.loginStyle === 'inline') {
     Auth0Inline.showLock(options)
-    // const isLogin = options.loginType === 'login'
-    // const isSignup = options.loginType === 'signup'
-    // const nonce = Random.secret()
-    // const params = {
-    //   state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
-    //   scope: 'openid profile email',
-    // }
-
-    // const lockOptions = {
-    //   configurationBaseUrl: options.clientConfigurationBaseUrl,
-    //   auth: {
-    //     // redirectUrl: options.redirectUrl,
-    //     responseType: 'token id_token',
-    //     params,
-    //     nonce,
-    //     sso: true,
-    //   },
-    //   allowedConnections:
-    //     options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
-    //   rememberLastLogin: true,
-    //   languageDictionary: options.lock.languageDictionary,
-    //   theme: {
-    //     logo: options.lock.logo,
-    //     primaryColor: options.lock.primaryColor,
-    //   },
-    //   avatar: null,
-    //   closable: true,
-    //   container: options.lock.containerId,
-    //   allowLogin: isLogin,
-    //   allowSignUp: isSignup,
-    // }
-
-    // // Close (destroy) previous lock instance
-    // Auth0.closeLock(options)
-
-    // const { Auth0Lock } = await import('auth0-lock')
-
-    // // Create and configure new auth0 lock instance
-    // Auth0.lock = new Auth0Lock(
-    //   Meteor.settings.public.AUTH0_CLIENT_ID,
-    //   Meteor.settings.public.AUTH0_DOMAIN,
-    //   lockOptions
-    // )
-
-    // // Authenticate the user in Meteor
-    // Auth0.lock.on('authenticated', result => {
-    //   Auth0.onAuthenticated(result, config.redirectUrl)
-    // })
-
-    // // Check for active login session in Auth0 (silent autentication)
-    // Auth0.lock.checkSession(
-    //   {
-    //     responseType: 'token id_token',
-    //     nonce,
-    //   },
-    //   (error, result) => {
-    //     if (error) {
-    //       // Show lock on error as user needs to sign in again
-    //       Auth0.lock.on('hide', () => {
-    //         window.history.replaceState({}, document.title, '.')
-    //       })
-
-    //       // Show lock
-    //       Auth0.lock.show()
-    //     } else {
-    //       // Authenticate the user in Meteor
-    //       Auth0.onAuthenticated(result, config.redirectUrl)
-
-    //       // const accessTokenQueryData = {
-    //       //   access_token: result.accessToken,
-    //       //   refresh_token: result.refreshToken,
-    //       //   expires_in: result.expiresIn,
-    //       // }
-    //       // const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
-    //       // const loginUrl =
-    //       //   options.redirectUrl +
-    //       //   '?' +
-    //       //   accessTokenQuery +
-    //       //   '&type=token' +
-    //       //   '&state=' +
-    //       //   OAuth._stateParam('redirect', options.credentialToken)
-
-    //       // window.history.replaceState({}, document.title, '.')
-    //       // window.location.href = loginUrl
-    //     }
-    //   }
-    // )
   } else {
     OAuth.launchLogin(options)
   }

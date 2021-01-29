@@ -79,30 +79,15 @@ Auth0Inline.showLock = async options => {
       } else {
         // Authenticate the user in Meteor
         Auth0Inline.onAuthenticated(result, options)
-
-        // const accessTokenQueryData = {
-        //   access_token: result.accessToken,
-        //   refresh_token: result.refreshToken,
-        //   expires_in: result.expiresIn,
-        // }
-        // const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
-        // const loginUrl =
-        //   options.redirectUrl +
-        //   '?' +
-        //   accessTokenQuery +
-        //   '&type=token' +
-        //   '&state=' +
-        //   OAuth._stateParam('redirect', options.credentialToken)
-
-        // window.history.replaceState({}, document.title, '.')
-        // window.location.href = loginUrl
       }
     }
   )
 }
 
 Auth0Inline.onAuthenticated = (result, options) => {
-  console.log('AUTHENTICATED', result, options)
+  console.log('AUTHENTICATED', result.accessToken)
+
+  options.authenticatedCallback?.()
 
   // Get lock container element
   const lockContainer = document.getElementById(options.lock.containerId)
@@ -113,28 +98,28 @@ Auth0Inline.onAuthenticated = (result, options) => {
      * Add message event listener for auth0 response from iFrame
      */
 
-    window.addEventListener(
-      'message',
-      event => {
-        if (event.data.type === 'AUTH0_RESPONSE') {
-          lockContainer.removeChild(iFrame)
+    // window.addEventListener(
+    //   'message',
+    //   event => {
+    //     if (event.data.type === 'AUTH0_RESPONSE') {
+    //       lockContainer.removeChild(iFrame)
 
-          const origin = getOrigin(options.rootUrl || Meteor.absoluteUrl(''))
+    //       const origin = getOrigin(options.rootUrl || Meteor.absoluteUrl(''))
 
-          if (event.origin === origin) {
-            const { credentialSecret, credentialToken } = event.data
+    //       if (event.origin === origin) {
+    //         const { credentialSecret, credentialToken } = event.data
 
-            Accounts.callLoginMethod({
-              methodArguments: [{ oauth: { credentialToken, credentialSecret } }],
-              userCallback: options.callback && (err => options.callback(convertError(err))),
-            })
-          } else {
-            // Log missmatching origin
-          }
-        }
-      },
-      false
-    )
+    //         Accounts.callLoginMethod({
+    //           methodArguments: [{ oauth: { credentialToken, credentialSecret } }],
+    //           userCallback: options.callback && (err => options.callback(convertError(err))),
+    //         })
+    //       } else {
+    //         // Log missmatching origin
+    //       }
+    //     }
+    //   },
+    //   false
+    // )
 
     /*
      * Add iframe with autentication url for Meteor
@@ -151,6 +136,7 @@ Auth0Inline.onAuthenticated = (result, options) => {
     const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
 
     const iFrameSourceUrl = options.redirectUrl + '?' + accessTokenQuery
+    console.log('REDIRECT URL', iFrameSourceUrl)
     iFrame = document.createElement('iframe')
     iFrame.setAttribute('src', iFrameSourceUrl)
     iFrame.setAttribute('width', '0')
@@ -158,7 +144,7 @@ Auth0Inline.onAuthenticated = (result, options) => {
     lockContainer.appendChild(iFrame)
 
     // Remove login or signup hash from url
-    // window.history.replaceState({}, document.title, '.')
+    window.history.replaceState({}, document.title, '.')
   }
 }
 

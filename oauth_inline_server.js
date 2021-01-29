@@ -67,6 +67,9 @@ const middleware = (req, res, next) => {
   // the runner
   try {
     const request = checkOauthRequest(req)
+
+    console.log('REQUEST', request)
+
     if (!request?.serviceName) {
       // not an oauth request. pass to next middleware.
       next()
@@ -211,6 +214,7 @@ OAuth._renderOauthResults = (res, query, credentialSecret) => {
 // with some ##PLACEHOLDER##s) communicates the credential secret back
 // to the main window and then closes the popup.
 OAuthInline._endOfInlineFormResponseTemplate = Assets.getText('end_of_inline_form_response.html')
+OAuthInline._endOfInlineFormResponseScript = Assets.getText('end_of_inline_form_response.js')
 
 // It would be nice to use Blaze here, but it's a little tricky
 // because our mustaches would be inside a <script> tag, and Blaze
@@ -230,47 +234,6 @@ const escapeString = (s) => {
     return s
   }
 }
-
-// Renders the iframe including the auth0 lock login form template into some HTML and JavaScript
-//
-// options are:
-//   - lock (options for lock. e.g. theming)
-//   - loginType ('login' or 'signup')
-//   - credentialToken
-//   - state
-//
-const renderIFrameForm = (config) => {
-  // Escape everything just to be safe (we've already checked that some
-  // of this data -- the token and secret -- are safe).
-  const settings = {
-    AUTH0_CLIENT_ID: Meteor.settings.public.AUTH0_CLIENT_ID,
-    AUTH0_DOMAIN: Meteor.settings.public.AUTH0_DOMAIN,
-    AUTH0_CLIENT_CONFIG_BASE_URL:
-      Meteor.settings.public.AUTH0_CLIENT_CONFIG_BASE_URL || 'https://cdn.eu.auth0.com/',
-  }
-
-  const rootUrl = Meteor.absoluteUrl('')
-
-  const iFrameConfig = {
-    credentialToken: config.credentialToken,
-    lock: JSON.parse(decodeURIComponent(config.lock)),
-    loginType: escapeString(config.loginType),
-    nonce: Random.secret(),
-    redirectUrl: escapeString(`${rootUrl}_oauth_inline/auth0`),
-    settings,
-    state: config.state,
-  }
-
-  const template = OAuthInline._iFrameInlineFormTemplate
-
-  const result = template
-    .replace(/##AUTH0_LOCK_VERSION##/, JSON.stringify(config.lock.version) || '11.27')
-    .replace(/##CONFIG##/, JSON.stringify(iFrameConfig))
-    .replace(/##ROOT_URL_PATH_PREFIX##/, __meteor_runtime_config__.ROOT_URL_PATH_PREFIX)
-
-  return `<!DOCTYPE html>\n${result}`
-}
-
 
 // Renders the end of login response template into some HTML and JavaScript
 // that closes the popup or redirects at the end of the OAuth flow.
@@ -298,10 +261,12 @@ const renderEndOfLoginResponse = (options) => {
   }
 
   const template = OAuthInline._endOfInlineFormResponseTemplate
+  const script = OAuthInline._endOfInlineFormResponseScript
 
   const result = template
     .replace(/##CONFIG##/, JSON.stringify(config))
     .replace(/##ROOT_URL_PATH_PREFIX##/, __meteor_runtime_config__.ROOT_URL_PATH_PREFIX)
+    // .replace(/##SCRIPT##/, JSON.stringify(script))
 
   return `<!DOCTYPE html>\n${result}`
 }
