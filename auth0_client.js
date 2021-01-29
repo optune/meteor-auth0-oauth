@@ -27,6 +27,8 @@ Meteor.loginWithAuth0 = function(options, callback) {
     options = null
   }
 
+  options.callback = callback
+
   /**
    *
    */
@@ -47,13 +49,13 @@ Auth0._loginStyle = function(config, options) {
 }
 
 Auth0._rootUrl = function(options) {
-  let redirectUrl = Meteor.absoluteUrl('')
+  let rootUrl = Meteor.absoluteUrl('')
 
   if (options.rootUrl > '') {
-    redirectUrl = options.rootUrl.endsWith('/') ? options.rootUrl : `${options.rootUrl}/`
+    rootUrl = options.rootUrl.endsWith('/') ? options.rootUrl : `${options.rootUrl}/`
   }
 
-  return redirectUrl
+  return rootUrl
 }
 
 /**
@@ -112,6 +114,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * We use state to roundtrip a random token to help protect against CSRF (boilerplate)
    */
 
+  const state = OAuth._stateParam(loginStyle, credentialToken, callbackUrl)
+
   let loginUrl =
     `https://${config.hostname}/authorize/` +
     '?scope=openid%20profile%20email' +
@@ -119,11 +123,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     '&client_id=' +
     config.clientId +
     '&state=' +
-    OAuth._stateParam(
-      loginStyle === 'inline' ? 'redirect' : loginStyle,
-      credentialToken,
-      callbackUrl
-    ) +
+    state +
     `&redirect_uri=${redirectUrl}`
 
   if (options.type) {
@@ -133,7 +133,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   /**
    * Client initiates OAuth login request (boilerplate)
    */
-  Oauth.startLogin({
+  OAuth.startLogin({
     authenticatedCallback: options.authenticatedCallback,
     callbackUrl,
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
@@ -150,7 +150,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   })
 }
 
-OAuth.startLogin = async options => {
+OAuth.startLogin = options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
@@ -161,7 +161,7 @@ OAuth.startLogin = async options => {
 }
 
 // Get cookie if external login
-function getCookie(name) {
+const getCookie = (name) => {
   // Split cookie string and get all individual name=value pairs in an array
   var cookieArr = document.cookie.split(';')
 

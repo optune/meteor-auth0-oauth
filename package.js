@@ -10,7 +10,7 @@ Package.onUse(function(api) {
   api.use('ecmascript')
   api.use('oauth2', ['client', 'server'])
   api.use('oauth', ['client', 'server'])
-  api.use('http', ['server'])
+  api.use('http', ['server'])  
   api.use(['underscore', 'service-configuration'], ['client', 'server'])
   api.use(['random'], 'client')
   api.use('accounts-oauth', ['client', 'server'])

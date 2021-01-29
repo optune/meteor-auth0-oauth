@@ -8,10 +8,12 @@ import { OAuthInline } from './oauth_inline_server'
  * Define the base object namespace. By convention we use the service name
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global.
  */
+
 Auth0 = {}
-Accounts.oauth.registerService('auth0')
 
 Auth0.whitelistedFields = ['id', 'email', 'picture', 'name']
+
+Accounts.oauth.registerService('auth0')
 
 Accounts.addAutopublishFields({
   forLoggedInUser: _.map(
