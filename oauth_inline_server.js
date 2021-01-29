@@ -67,6 +67,7 @@ const middleware = (req, res, next) => {
   // the runner
   try {
     const request = checkOauthRequest(req)
+
     if (!request?.serviceName) {
       // not an oauth request. pass to next middleware.
       next()
@@ -86,7 +87,6 @@ const middleware = (req, res, next) => {
     if (!handler) throw new Error(`Unexpected OAuth version ${service.version}`)
 
     // Set request type and request data for response
-    requestType = request.requestType
 
     if (req.method === 'GET') {
       requestData = req.query
@@ -95,13 +95,7 @@ const middleware = (req, res, next) => {
     }
 
     // Render response
-    if (requestType === 'token') {
-      handler(service, requestData, res)
-    } else {
-      OAuthInline._iFrameInlineForm(res, {
-        query: requestData,
-      })
-    }
+    handler(service, requestData, res)
   } catch (requestError) {
     console.error('REQUEST ERROR', requestError)
     // if we got thrown an error, save it off, it will get passed to
@@ -125,15 +119,14 @@ const middleware = (req, res, next) => {
 
       // Catch errors because any exception here will crash the runner.
       try {
-        if (requestType === 'token') {
-          OAuthInline._endOfInlineFormResponse(res, {
-            query: requestData,
-            error: requestError,
-          })
-        }
+        OAuthInline._endOfInlineFormResponse(res, {
+          query: requestData,
+          error: requestError,
+        })
       } catch (responseError) {
         console.warn(
-          'Error generating end of login response\n' + (responseError.stack || responseError.message)
+          'Error generating end of login response\n' +
+            (responseError.stack || responseError.message)
         )
       }
     }
@@ -166,9 +159,7 @@ const checkOauthRequest = (req) => {
   if (serviceName !== 'auth0') return null
 
   // Define request type (login form or response token)
-  const requestType = splitPath.length > 3 && splitPath[3] === 'form' ? 'form' : 'token'
-
-  return { serviceName, requestType }
+  return { serviceName }
 }
 
 // Make sure we're configured
@@ -205,7 +196,7 @@ OAuth._renderOauthResults = (res, query, credentialSecret) => {
   const loginStyle = OAuth._loginStyleFromQuery(query)
 
   if (loginStyle === 'inline') {
-    OAuthInline._endOfInlineFormResponse(res, details)  
+    OAuthInline._endOfInlineFormResponse(res, details)
   } else {
     _renderOauthResults(res, query, credentialSecret)
   }
@@ -214,7 +205,6 @@ OAuth._renderOauthResults = (res, query, credentialSecret) => {
 // This "template" (not a real Spacebars template, just an HTML file
 // with some ##PLACEHOLDER##s) communicates the credential secret back
 // to the main window and then closes the popup.
-OAuthInline._iFrameInlineFormTemplate = Assets.getText('iframe_inline_form.html')
 OAuthInline._endOfInlineFormResponseTemplate = Assets.getText('end_of_inline_form_response.html')
 
 // It would be nice to use Blaze here, but it's a little tricky
@@ -234,71 +224,6 @@ const escapeString = (s) => {
   } else {
     return s
   }
-}
-
-// Renders the iframe including the auth0 lock login form template into some HTML and JavaScript
-//
-// options are:
-//   - lock (options for lock. e.g. theming)
-//   - loginType ('login' or 'signup')
-//   - credentialToken
-//   - state
-//
-const renderIFrameForm = (config) => {
-  // Escape everything just to be safe (we've already checked that some
-  // of this data -- the token and secret -- are safe).
-  const settings = {
-    AUTH0_CLIENT_ID: Meteor.settings.public.AUTH0_CLIENT_ID,
-    AUTH0_DOMAIN: Meteor.settings.public.AUTH0_DOMAIN,
-    AUTH0_CLIENT_CONFIG_BASE_URL:
-      Meteor.settings.public.AUTH0_CLIENT_CONFIG_BASE_URL || 'https://cdn.eu.auth0.com/',
-  }
-
-  const rootUrl = Meteor.absoluteUrl('')
-
-  const iFrameConfig = {
-    credentialToken: config.credentialToken,
-    lock: JSON.parse(decodeURIComponent(config.lock)),
-    loginType: escapeString(config.loginType),
-    nonce: Random.secret(),
-    redirectUrl: escapeString(`${rootUrl}_oauth_inline/auth0`),
-    settings,
-    state: config.state,
-  }
-
-  const template = OAuthInline._iFrameInlineFormTemplate
-
-  const result = template
-    .replace(/##AUTH0_LOCK_VERSION##/, JSON.stringify(config.lock.version) || '11.27')
-    .replace(/##CONFIG##/, JSON.stringify(iFrameConfig))
-    .replace(/##ROOT_URL_PATH_PREFIX##/, __meteor_runtime_config__.ROOT_URL_PATH_PREFIX)
-
-  return `<!DOCTYPE html>\n${result}`
-}
-
-// Writes an HTTP response to the iframe at the beginning of an OAuth
-// Auth0 login flow containing the config and setup for the Auth0 lock
-//
-// Arguments:
-//   - res: the HTTP response object
-//   - details:
-//      - error: if present, a string or Error indicating an error that
-//        occurred during the login. This can come from the client and
-//        so shouldn't be trusted for security decisions or included in
-//        the response without sanitizing it first. Only one of `error`
-//        or `credentials` should be set.
-OAuthInline._iFrameInlineForm = (res, requestData) => {
-  res.writeHead(200, { 'Content-Type': 'text/html' })
-
-  if (requestData.error) {
-    const errorMessage =
-      requestData.error instanceof Error ? requestData.error.message : requestData.error
-    console.warn('Error in OAuth Server: ' + errorMessage)
-
-    res.end(renderIFrameForm({ error: errorMessage }))
-  }
-
-  res.end(renderIFrameForm(requestData.query), 'utf-8')
 }
 
 // Renders the end of login response template into some HTML and JavaScript

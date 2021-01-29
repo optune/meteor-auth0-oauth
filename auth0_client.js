@@ -4,7 +4,7 @@ import { Meteor } from 'meteor/meteor'
 import { OAuth } from 'meteor/oauth'
 import { Accounts } from 'meteor/accounts-base'
 
-import { OAuthInline } from './oauth_inline_client'
+import { Auth0Inline } from './auth0_inline'
 
 const KEY_NAME = 'Meteor_Reload'
 const SIGNUP_AS = '/_signup'
@@ -14,9 +14,7 @@ const SIGNUP_AS = '/_signup'
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global (boilerplate).
  */
 
-Auth0 = {
-  lock: undefined,
-}
+Auth0 = {}
 
 Accounts.oauth.registerService('auth0')
 
@@ -104,7 +102,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Detemines the login style
   const loginStyle = Auth0._loginStyle(config, options)
   const rootUrl = Auth0._rootUrl(options)
-  const redirectUrl = `${rootUrl}_oauth/auth0`
+  const redirectUrl = `${rootUrl}${loginStyle === 'inline' ? '_oauth_inline' : '_oauth'}/auth0`
 
   // Determine path
   let path = options.path || ''
@@ -135,48 +133,30 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   /**
    * Client initiates OAuth login request (boilerplate)
    */
-  Auth0.startLogin({
-    clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
-    loginService: 'auth0',
-    loginStyle,
-    loginUrl,
-    loginPath: path,
-    loginType: options.type,
-    redirectUrl,
+  OAuth.startLogin({
+    authenticatedCallback: options.authenticatedCallback,
     callbackUrl,
-    callback: options.callback,
+    clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     credentialRequestCompleteCallback,
     credentialToken,
-    rootUrl,
-    state,
-    popupOptions: {
-      height: 600,
-    },
     lock: options.lock || {},
+    loginPath: path,
+    loginService: 'auth0',
+    loginStyle,
+    loginType: options.type,
+    loginUrl,
+    popupOptions: config.popupOptions || { height: 600 },
+    redirectUrl,
   })
 }
 
-Auth0.startLogin = options => {
+OAuth.startLogin = options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
-    OAuthInline.showInlineLoginForm(options)
+    Auth0Inline.showLock(options)
   } else {
     OAuth.launchLogin(options)
-  }
-}
-
-Auth0.closeLock = (options = {}) => {
-  Auth0.lock = undefined
-
-  if (options.lock && options.lock.containerId > '') {
-    // Get the container element
-    var container = document.getElementById(options.lock.containerId)
-
-    // As long as <ul> has a child node, remove it
-    if (container && container.hasChildNodes()) {
-      container.removeChild(container.firstChild)
-    }
   }
 }
 
