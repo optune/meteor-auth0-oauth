@@ -4,8 +4,6 @@ import { Meteor } from 'meteor/meteor'
 import { OAuth } from 'meteor/oauth'
 import { Accounts } from 'meteor/accounts-base'
 
-import { Auth0Inline } from './auth0_inline'
-
 const KEY_NAME = 'Meteor_Reload'
 const SIGNUP_AS = '/_signup'
 
@@ -14,7 +12,9 @@ const SIGNUP_AS = '/_signup'
  * in PascalCase (aka UpperCamelCase). Note that this is defined as a package global (boilerplate).
  */
 
-Auth0 = {}
+Auth0 = {
+  lock: undefined,
+}
 
 Accounts.oauth.registerService('auth0')
 
@@ -100,11 +100,11 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Detemines the login style
   const loginStyle = Auth0._loginStyle(config, options)
   const rootUrl = Auth0._rootUrl(options)
-  const redirectUrl = `${rootUrl}${loginStyle === 'inline' ? '_oauth_inline' : '_oauth'}/auth0`
+  const redirectUrl = `${rootUrl}_oauth/auth0`
 
   // Determine path
   let path = options.path || ''
-  path = path.startsWith('/') ? path.substring(1) : path
+  path = path.startsWith('/') ? path?.substring(1) : path
   const callbackUrl = `${rootUrl}${path}`
 
   /**
@@ -134,19 +134,20 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Client initiates OAuth login request (boilerplate)
    */
   Oauth.startLogin({
-    authenticatedCallback: options.authenticatedCallback,
-    callbackUrl,
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
-    credentialRequestCompleteCallback,
-    credentialToken,
-    lock: options.lock || {},
-    loginPath: path,
     loginService: 'auth0',
     loginStyle,
-    loginType: options.type,
     loginUrl,
-    popupOptions: config.popupOptions || { height: 600 },
+    loginPath: path,
+    loginType: options.type,
     redirectUrl,
+    callbackUrl,
+    credentialRequestCompleteCallback,
+    credentialToken,
+    popupOptions: {
+      height: 600,
+    },
+    lock: options.lock || {},
   })
 }
 
@@ -154,9 +155,105 @@ OAuth.startLogin = async options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
-    Auth0Inline.showLock(options)
+    OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
+
+    const isLogin = options.loginType === 'login'
+    const isSignup = options.loginType === 'signup'
+    const nonce = Random.secret()
+    const params = {
+      state: OAuth._stateParam('redirect', options.credentialToken, options.callbackUrl),
+      scope: 'openid profile email',
+    }
+
+    const lockOptions = {
+      configurationBaseUrl: options.clientConfigurationBaseUrl,
+      auth: {
+        redirectUrl: options.redirectUrl,
+        params,
+        nonce,
+        sso: true,
+      },
+      allowedConnections:
+        options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
+      rememberLastLogin: true,
+      languageDictionary: options.lock.languageDictionary,
+      theme: {
+        logo: options.lock.logo,
+        primaryColor: options.lock.primaryColor,
+      },
+      avatar: null,
+      closable: true,
+      container: options.lock.containerId,
+      allowLogin: isLogin,
+      allowSignUp: isSignup,
+    }
+
+    // Close (destroy) previous lock instance
+    Auth0.closeLock(options)
+
+    const { Auth0Lock } = await import('auth0-lock')
+
+    // Create and configure new auth0 lock instance
+    Auth0.lock = new Auth0Lock(
+      Meteor.settings.public.AUTH0_CLIENT_ID,
+      Meteor.settings.public.AUTH0_DOMAIN,
+      lockOptions
+    )
+
+    // Check for active login session in Auth0 (silent autentication)
+    Auth0.lock.checkSession(
+      {
+        responseType: 'token id_token',
+        params,
+        nonce,
+        sso: true,
+      },
+      (error, result) => {
+        if (error) {
+          // Show lock on error as user needs to sign in again
+          Auth0.lock.on('hide', () => {
+            window.history.replaceState({}, document.title, '.')
+          })
+
+          // Show lock
+          Auth0.lock.show()
+        } else {
+          // Authenticate the user for the application
+          const accessTokenQueryData = {
+            access_token: result.accessToken,
+            refresh_token: result.refreshToken,
+            expires_in: result.expiresIn,
+          }
+          const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
+          const loginUrl =
+            options.redirectUrl +
+            '?' +
+            accessTokenQuery +
+            '&type=token' +
+            '&state=' +
+            OAuth._stateParam('redirect', options.credentialToken)
+
+          window.history.replaceState({}, document.title, '.')
+          window.location.href = loginUrl
+        }
+      }
+    )
   } else {
     OAuth.launchLogin(options)
+  }
+}
+
+Auth0.closeLock = (options = {}) => {
+  Auth0.lock = undefined
+
+  if (options.lock && options.lock.containerId > '') {
+    // Get the container element
+    var container = document.getElementById(options.lock.containerId)
+
+    // As long as <ul> has a child node, remove it
+    if (container && container.hasChildNodes()) {
+      container.removeChild(container.firstChild)
+    }
   }
 }
 
