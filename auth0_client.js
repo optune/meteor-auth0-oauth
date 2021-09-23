@@ -30,6 +30,10 @@ Meteor.loginWithAuth0 = function(options, callback) {
   /**
    *
    */
+  console.log('--------------------------------')
+  console.log({ Accounts, Auth0 })
+  console.log('--------------------------------')
+
   var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
   Auth0.requestCredential(options, credentialRequestCompleteCallback)
 }
@@ -130,10 +134,13 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginUrl = loginUrl + '#' + options.type
   }
 
+  // console.log(JSON.stringify({ config }, null, 2))
+  console.log(JSON.stringify({ BEFORE_OPTINS: options }, null, 2))
+
   /**
    * Client initiates OAuth login request (boilerplate)
    */
-  Oauth.startLogin({
+  OAuth.startLogin({
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     loginService: 'auth0',
     loginStyle,
@@ -148,6 +155,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
       height: 600,
     },
     lock: options.lock || {},
+    isPublicPage: options.isPublicPage,
   })
 }
 
@@ -188,6 +196,8 @@ OAuth.startLogin = async options => {
       allowSignUp: isSignup,
     }
 
+    console.log(JSON.stringify({ lockOptions }, null, 2))
+
     // Close (destroy) previous lock instance
     Auth0.closeLock(options)
 
@@ -200,51 +210,67 @@ OAuth.startLogin = async options => {
       lockOptions
     )
 
-    // Check for active login session in Auth0 (silent autentication)
-    Auth0.lock.checkSession(
-      {
-        responseType: 'token id_token',
-        params,
-        nonce,
-        sso: true,
-      },
-      (error, result) => {
-        if (error) {
-          // Show lock on error as user needs to sign in again
-          Auth0.lock.on('hide', () => {
+    console.log('decide')
+    console.log(JSON.stringify({ options }, null, 2))
+
+    if (options.isPublicPage) {
+      // Show lock on error as user needs to sign in again
+      Auth0.lock.on('hide', () => {
+        window.history.replaceState({}, document.title, '.')
+      })
+
+      console.log('is public page')
+      // Show lock
+      Auth0.lock.show()
+    } else {
+      // Check for active login session in Auth0 (silent autentication)
+      Auth0.lock.checkSession(
+        {
+          responseType: 'token id_token',
+          params,
+          nonce,
+          sso: true,
+        },
+        (error, result) => {
+          if (error) {
+            // Show lock on error as user needs to sign in again
+            Auth0.lock.on('hide', () => {
+              window.history.replaceState({}, document.title, '.')
+            })
+
+            // Show lock
+            Auth0.lock.show()
+          } else {
+            // Authenticate the user for the application
+            const accessTokenQueryData = {
+              access_token: result.accessToken,
+              refresh_token: result.refreshToken,
+              expires_in: result.expiresIn,
+            }
+            const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
+            const loginUrl =
+              options.redirectUrl +
+              '?' +
+              accessTokenQuery +
+              '&type=token' +
+              '&state=' +
+              OAuth._stateParam('redirect', options.credentialToken)
+
             window.history.replaceState({}, document.title, '.')
-          })
-
-          // Show lock
-          Auth0.lock.show()
-        } else {
-          // Authenticate the user for the application
-          const accessTokenQueryData = {
-            access_token: result.accessToken,
-            refresh_token: result.refreshToken,
-            expires_in: result.expiresIn,
+            window.location.href = loginUrl
           }
-          const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
-          const loginUrl =
-            options.redirectUrl +
-            '?' +
-            accessTokenQuery +
-            '&type=token' +
-            '&state=' +
-            OAuth._stateParam('redirect', options.credentialToken)
-
-          window.history.replaceState({}, document.title, '.')
-          window.location.href = loginUrl
         }
-      }
-    )
+      )
+    }
   } else {
+    console.log('lauch login')
     OAuth.launchLogin(options)
   }
 }
 
 Auth0.closeLock = (options = {}) => {
   Auth0.lock = undefined
+  console.log('close lock')
 
   if (options.lock && options.lock.containerId > '') {
     // Get the container element
@@ -287,6 +313,7 @@ if (cookieMigrationData) {
 OAuth.getDataAfterRedirect = () => {
   let migrationData = Reload._migrationData('oauth')
 
+  console.log('get data after redirect')
   // Check for migration data in cookie
   if (!migrationData && cookieMigrationData) {
     migrationData = cookieMigrationData.oauth
