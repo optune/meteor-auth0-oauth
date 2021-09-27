@@ -53,9 +53,13 @@ Auth0._loginStyle = function(config, options) {
 Auth0._rootUrl = function(options) {
   let redirectUrl = Meteor.absoluteUrl('')
 
+  console.log({ redirectUrl })
+  console.log({ optionsROOT: options })
+
   if (options.rootUrl > '') {
     redirectUrl = options.rootUrl.endsWith('/') ? options.rootUrl : `${options.rootUrl}/`
   }
+  console.log({ redirectUrlAFTER: redirectUrl })
 
   return redirectUrl
 }
@@ -104,12 +108,18 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Detemines the login style
   const loginStyle = Auth0._loginStyle(config, options)
   const rootUrl = Auth0._rootUrl(options)
+  console.log({ rootUrl })
   const redirectUrl = `${rootUrl}_oauth/auth0`
 
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path?.substring(1) : path
   const callbackUrl = `${rootUrl}${path}`
+  // const callbackUrl = `${options.callbackRedirect || rootUrl}${
+  //   options.callbackRedirect > '' ? '/_oauth/auth0' : path
+  // }`
+
+  console.log({ callbackUrl, path })
 
   /**
    * Imgur requires response_type and client_id
@@ -155,7 +165,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
       height: 600,
     },
     lock: options.lock || {},
-    isPublicPage: options.isPublicPage,
+    onlyShowLock: options.onlyShowLock,
   })
 }
 
@@ -213,7 +223,7 @@ OAuth.startLogin = async options => {
     console.log('decide')
     console.log(JSON.stringify({ options }, null, 2))
 
-    if (options.isPublicPage) {
+    if (options.onlyShowLock) {
       // Show lock on error as user needs to sign in again
       Auth0.lock.on('hide', () => {
         window.history.replaceState({}, document.title, '.')
@@ -324,6 +334,9 @@ OAuth.getDataAfterRedirect = () => {
   const { credentialToken } = migrationData
   const key = OAuth._storageTokenPrefix + credentialToken
   let credentialSecret
+
+  console.log({ migrationData })
+  console.log({ key })
 
   try {
     credentialSecret = sessionStorage.getItem(key)

@@ -87,6 +87,7 @@ Auth0Inline.showLock = async options => {
 Auth0Inline.onAuthenticated = (result, options) => {
   options.authenticatedCallback?.()
 
+  console.log('on Authanticaned')
   // Get lock container element
   const lockContainer = document.getElementById(options.lock.containerId)
   let iFrame
