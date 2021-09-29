@@ -114,10 +114,11 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path?.substring(1) : path
-  const callbackUrl = `${rootUrl}${path}`
+  // const callbackUrl = `${rootUrl}${path}`
   // const callbackUrl = `${options.callbackRedirect || rootUrl}${
   //   options.callbackRedirect > '' ? '/_oauth/auth0' : path
   // }`
+  const callbackUrl = `${options.callbackRedirect || rootUrl}${path}`
 
   console.log({ callbackUrl, path })
 
@@ -140,6 +141,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     ) +
     `&redirect_uri=${redirectUrl}`
 
+  console.log({ loginUrl })
+
   if (options.type) {
     loginUrl = loginUrl + '#' + options.type
   }
@@ -151,6 +154,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Client initiates OAuth login request (boilerplate)
    */
   OAuth.startLogin({
+    artistSlug: options.artistSlug || 'uknown',
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     loginService: 'auth0',
     loginStyle,
@@ -161,6 +165,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     callbackUrl,
     credentialRequestCompleteCallback,
     credentialToken,
+    showTerms: options.showTerms,
+    mustAcceptTerms: options.mustAcceptTerms,
     popupOptions: {
       height: 600,
     },
@@ -185,12 +191,20 @@ OAuth.startLogin = async options => {
 
     const lockOptions = {
       configurationBaseUrl: options.clientConfigurationBaseUrl,
+      additionalSignUpFields: [
+        {
+          type: 'hidden',
+          name: 'artistSlug',
+          value: options.artistSlug,
+        },
+      ],
       auth: {
         redirectUrl: options.redirectUrl,
         params,
         nonce,
         sso: true,
       },
+
       allowedConnections:
         options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
       rememberLastLogin: true,
@@ -204,6 +218,8 @@ OAuth.startLogin = async options => {
       container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
+      showTerms: options.showTerms,
+      mustAcceptTerms: options.mustAcceptTerms,
     }
 
     console.log(JSON.stringify({ lockOptions }, null, 2))
@@ -247,10 +263,13 @@ OAuth.startLogin = async options => {
             Auth0.lock.on('hide', () => {
               window.history.replaceState({}, document.title, '.')
             })
+            console.log('YTES ERROR CHECK')
 
             // Show lock
             Auth0.lock.show()
           } else {
+            console.log('NO ERROR CHECK')
+            console.log({ result })
             // Authenticate the user for the application
             const accessTokenQueryData = {
               access_token: result.accessToken,
@@ -266,6 +285,7 @@ OAuth.startLogin = async options => {
               '&state=' +
               OAuth._stateParam('redirect', options.credentialToken)
 
+            console.log({ accessToken: result.accessToken })
             window.history.replaceState({}, document.title, '.')
             window.location.href = loginUrl
           }
@@ -329,18 +349,20 @@ OAuth.getDataAfterRedirect = () => {
     migrationData = cookieMigrationData.oauth
   }
 
+  console.log({ migrationData })
+
   if (!(migrationData && migrationData.credentialToken)) return null
 
   const { credentialToken } = migrationData
   const key = OAuth._storageTokenPrefix + credentialToken
   let credentialSecret
 
-  console.log({ migrationData })
   console.log({ key })
 
   try {
     credentialSecret = sessionStorage.getItem(key)
     sessionStorage.removeItem(key)
+    console.log({ credentialSecret })
   } catch (e) {
     Meteor._debug('error retrieving credentialSecret', e)
   }

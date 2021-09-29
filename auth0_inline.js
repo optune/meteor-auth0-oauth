@@ -87,7 +87,7 @@ Auth0Inline.showLock = async options => {
 Auth0Inline.onAuthenticated = (result, options) => {
   options.authenticatedCallback?.()
 
-  console.log('on Authanticaned')
+  console.log('ON AUTH Authanticaned')
   // Get lock container element
   const lockContainer = document.getElementById(options.lock.containerId)
   let iFrame
@@ -108,6 +108,7 @@ Auth0Inline.onAuthenticated = (result, options) => {
           if (event.origin === origin) {
             const { credentialSecret, credentialToken } = event.data
 
+            console.log({ event })
             Accounts.callLoginMethod({
               methodArguments: [{ oauth: { credentialToken, credentialSecret } }],
               userCallback: options.callback && (err => options.callback(convertError(err))),
@@ -133,6 +134,8 @@ Auth0Inline.onAuthenticated = (result, options) => {
       type: 'token',
     }
     const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
+
+    console.log({ accessTokenQueryData, accessTokenQuery })
 
     const iFrameSourceUrl = options.redirectUrl + '?' + accessTokenQuery
     iFrame = document.createElement('iframe')
