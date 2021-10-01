@@ -30,9 +30,6 @@ Meteor.loginWithAuth0 = function(options, callback) {
   /**
    *
    */
-  console.log('--------------------------------')
-  console.log({ Accounts, Auth0 })
-  console.log('--------------------------------')
 
   var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
   Auth0.requestCredential(options, credentialRequestCompleteCallback)
@@ -53,13 +50,9 @@ Auth0._loginStyle = function(config, options) {
 Auth0._rootUrl = function(options) {
   let redirectUrl = Meteor.absoluteUrl('')
 
-  console.log({ redirectUrl })
-  console.log({ optionsROOT: options })
-
   if (options.rootUrl > '') {
     redirectUrl = options.rootUrl.endsWith('/') ? options.rootUrl : `${options.rootUrl}/`
   }
-  console.log({ redirectUrlAFTER: redirectUrl })
 
   return redirectUrl
 }
@@ -108,19 +101,12 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Detemines the login style
   const loginStyle = Auth0._loginStyle(config, options)
   const rootUrl = Auth0._rootUrl(options)
-  console.log({ rootUrl })
   const redirectUrl = `${rootUrl}_oauth/auth0`
 
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path?.substring(1) : path
-  // const callbackUrl = `${rootUrl}${path}`
-  // const callbackUrl = `${options.callbackRedirect || rootUrl}${
-  //   options.callbackRedirect > '' ? '/_oauth/auth0' : path
-  // }`
   const callbackUrl = `${options.callbackRedirect || rootUrl}${path}`
-
-  console.log({ callbackUrl, path })
 
   /**
    * Imgur requires response_type and client_id
@@ -141,20 +127,15 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     ) +
     `&redirect_uri=${redirectUrl}`
 
-  console.log({ loginUrl })
-
   if (options.type) {
     loginUrl = loginUrl + '#' + options.type
   }
-
-  // console.log(JSON.stringify({ config }, null, 2))
-  console.log(JSON.stringify({ BEFORE_OPTINS: options }, null, 2))
 
   /**
    * Client initiates OAuth login request (boilerplate)
    */
   OAuth.startLogin({
-    artistSlug: options.artistSlug || 'uknown',
+    referralArtist: options.referralArtist || '-',
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     loginService: 'auth0',
     loginStyle,
@@ -194,8 +175,8 @@ OAuth.startLogin = async options => {
       additionalSignUpFields: [
         {
           type: 'hidden',
-          name: 'artistSlug',
-          value: options.artistSlug,
+          name: 'referralArtist',
+          value: options.referralArtist,
         },
       ],
       auth: {
@@ -204,7 +185,6 @@ OAuth.startLogin = async options => {
         nonce,
         sso: true,
       },
-
       allowedConnections:
         options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
       rememberLastLogin: true,
@@ -222,8 +202,6 @@ OAuth.startLogin = async options => {
       mustAcceptTerms: options.mustAcceptTerms,
     }
 
-    console.log(JSON.stringify({ lockOptions }, null, 2))
-
     // Close (destroy) previous lock instance
     Auth0.closeLock(options)
 
@@ -236,16 +214,12 @@ OAuth.startLogin = async options => {
       lockOptions
     )
 
-    console.log('decide')
-    console.log(JSON.stringify({ options }, null, 2))
-
     if (options.onlyShowLock) {
       // Show lock on error as user needs to sign in again
       Auth0.lock.on('hide', () => {
         window.history.replaceState({}, document.title, '.')
       })
 
-      console.log('is public page')
       // Show lock
       Auth0.lock.show()
     } else {
@@ -263,13 +237,10 @@ OAuth.startLogin = async options => {
             Auth0.lock.on('hide', () => {
               window.history.replaceState({}, document.title, '.')
             })
-            console.log('YTES ERROR CHECK')
 
             // Show lock
             Auth0.lock.show()
           } else {
-            console.log('NO ERROR CHECK')
-            console.log({ result })
             // Authenticate the user for the application
             const accessTokenQueryData = {
               access_token: result.accessToken,
@@ -285,7 +256,6 @@ OAuth.startLogin = async options => {
               '&state=' +
               OAuth._stateParam('redirect', options.credentialToken)
 
-            console.log({ accessToken: result.accessToken })
             window.history.replaceState({}, document.title, '.')
             window.location.href = loginUrl
           }
@@ -293,14 +263,12 @@ OAuth.startLogin = async options => {
       )
     }
   } else {
-    console.log('lauch login')
     OAuth.launchLogin(options)
   }
 }
 
 Auth0.closeLock = (options = {}) => {
   Auth0.lock = undefined
-  console.log('close lock')
 
   if (options.lock && options.lock.containerId > '') {
     // Get the container element
@@ -343,13 +311,10 @@ if (cookieMigrationData) {
 OAuth.getDataAfterRedirect = () => {
   let migrationData = Reload._migrationData('oauth')
 
-  console.log('get data after redirect')
   // Check for migration data in cookie
   if (!migrationData && cookieMigrationData) {
     migrationData = cookieMigrationData.oauth
   }
-
-  console.log({ migrationData })
 
   if (!(migrationData && migrationData.credentialToken)) return null
 
@@ -357,12 +322,9 @@ OAuth.getDataAfterRedirect = () => {
   const key = OAuth._storageTokenPrefix + credentialToken
   let credentialSecret
 
-  console.log({ key })
-
   try {
     credentialSecret = sessionStorage.getItem(key)
     sessionStorage.removeItem(key)
-    console.log({ credentialSecret })
   } catch (e) {
     Meteor._debug('error retrieving credentialSecret', e)
   }
