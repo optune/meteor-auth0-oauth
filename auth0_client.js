@@ -30,6 +30,7 @@ Meteor.loginWithAuth0 = function(options, callback) {
   /**
    *
    */
+
   var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
   Auth0.requestCredential(options, credentialRequestCompleteCallback)
 }
@@ -105,7 +106,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path?.substring(1) : path
-  const callbackUrl = `${rootUrl}${path}`
+  const callbackUrl = `${options.callbackRedirect || rootUrl}${path}`
 
   /**
    * Imgur requires response_type and client_id
@@ -133,7 +134,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   /**
    * Client initiates OAuth login request (boilerplate)
    */
-  Oauth.startLogin({
+  OAuth.startLogin({
+    additionalSignUpFields: options.additionalSignUpFields,
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     loginService: 'auth0',
     loginStyle,
@@ -144,10 +146,13 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     callbackUrl,
     credentialRequestCompleteCallback,
     credentialToken,
+    showTerms: options.showTerms,
+    mustAcceptTerms: options.mustAcceptTerms,
     popupOptions: {
       height: 600,
     },
     lock: options.lock || {},
+    onlyShowLock: options.onlyShowLock,
   })
 }
 
@@ -167,6 +172,7 @@ OAuth.startLogin = async options => {
 
     const lockOptions = {
       configurationBaseUrl: options.clientConfigurationBaseUrl,
+      additionalSignUpFields: options.additionalSignUpFields,
       auth: {
         redirectUrl: options.redirectUrl,
         params,
@@ -186,6 +192,8 @@ OAuth.startLogin = async options => {
       container: options.lock.containerId,
       allowLogin: isLogin,
       allowSignUp: isSignup,
+      showTerms: options.showTerms,
+      mustAcceptTerms: options.mustAcceptTerms,
     }
 
     // Close (destroy) previous lock instance
@@ -200,44 +208,54 @@ OAuth.startLogin = async options => {
       lockOptions
     )
 
-    // Check for active login session in Auth0 (silent autentication)
-    Auth0.lock.checkSession(
-      {
-        responseType: 'token id_token',
-        params,
-        nonce,
-        sso: true,
-      },
-      (error, result) => {
-        if (error) {
-          // Show lock on error as user needs to sign in again
-          Auth0.lock.on('hide', () => {
+    if (options.onlyShowLock) {
+      // Show lock on error as user needs to sign in again
+      Auth0.lock.on('hide', () => {
+        window.history.replaceState({}, document.title, '.')
+      })
+
+      // Show lock
+      Auth0.lock.show()
+    } else {
+      // Check for active login session in Auth0 (silent autentication)
+      Auth0.lock.checkSession(
+        {
+          responseType: 'token id_token',
+          params,
+          nonce,
+          sso: true,
+        },
+        (error, result) => {
+          if (error) {
+            // Show lock on error as user needs to sign in again
+            Auth0.lock.on('hide', () => {
+              window.history.replaceState({}, document.title, '.')
+            })
+
+            // Show lock
+            Auth0.lock.show()
+          } else {
+            // Authenticate the user for the application
+            const accessTokenQueryData = {
+              access_token: result.accessToken,
+              refresh_token: result.refreshToken,
+              expires_in: result.expiresIn,
+            }
+            const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
+            const loginUrl =
+              options.redirectUrl +
+              '?' +
+              accessTokenQuery +
+              '&type=token' +
+              '&state=' +
+              OAuth._stateParam('redirect', options.credentialToken)
+
             window.history.replaceState({}, document.title, '.')
-          })
-
-          // Show lock
-          Auth0.lock.show()
-        } else {
-          // Authenticate the user for the application
-          const accessTokenQueryData = {
-            access_token: result.accessToken,
-            refresh_token: result.refreshToken,
-            expires_in: result.expiresIn,
+            window.location.href = loginUrl
           }
-          const accessTokenQuery = new URLSearchParams(accessTokenQueryData)
-          const loginUrl =
-            options.redirectUrl +
-            '?' +
-            accessTokenQuery +
-            '&type=token' +
-            '&state=' +
-            OAuth._stateParam('redirect', options.credentialToken)
-
-          window.history.replaceState({}, document.title, '.')
-          window.location.href = loginUrl
         }
-      }
-    )
+      )
+    }
   } else {
     OAuth.launchLogin(options)
   }
