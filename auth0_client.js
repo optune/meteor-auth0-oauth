@@ -135,7 +135,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
    * Client initiates OAuth login request (boilerplate)
    */
   OAuth.startLogin({
-    referralArtist: options.referralArtist || '-',
+    additionalSignUpFields: options.additionalSignUpFields,
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
     loginService: 'auth0',
     loginStyle,
@@ -172,13 +172,7 @@ OAuth.startLogin = async options => {
 
     const lockOptions = {
       configurationBaseUrl: options.clientConfigurationBaseUrl,
-      additionalSignUpFields: [
-        {
-          type: 'hidden',
-          name: 'referralArtist',
-          value: options.referralArtist,
-        },
-      ],
+      additionalSignUpFields: options.additionalSignUpFields,
       auth: {
         redirectUrl: options.redirectUrl,
         params,
