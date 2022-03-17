@@ -1,6 +1,7 @@
 import { Meteor } from 'meteor/meteor'
 import { Accounts } from 'meteor/accounts-base'
 import { OAuth } from 'meteor/oauth'
+import { fetch, Headers } from 'meteor/fetch'
 
 import { OAuthInline } from './oauth_inline_server'
 
@@ -70,7 +71,8 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  *  handleOauthRequest = function(query) returns {serviceData, options} where options is optional
  * serviceData will end up in the user's services.imgur
  */
-OAuthInline.registerService('auth0', 2, null, function(query) {
+
+OAuthInline.registerService('auth0', 2, null, query => {
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */
@@ -85,7 +87,32 @@ OAuthInline.registerService('auth0', 2, null, function(query) {
    * Get the token and username (Meteor handles the underlying authorization flow).
    * Note that the username comes from from this request in Imgur.
    */
-  const response = query.type === 'token' ? getToken(query) : getTokens(config, query)
+  // const getTokensSync = Meteor.wrapAsync(getTokens)
+  let response
+
+  if (query.type === 'token') {
+    response = getToken(query)
+  } else {
+    tokenData = getTokens(config, query)
+
+    if (tokenData.error) {
+      /**
+       * The http response was a json object with an error attribute
+       */
+      throw new Error(`Failed to complete OAuth handshake with Auth0. ${tokenData.error}`)
+    } else {
+      /** The exchange worked. We have an object containing
+       *   access_token
+       *   refresh_token
+       *   expires_in
+       *   token_type
+       *   account_username
+       *
+       * Return an appropriately constructed object
+       */
+      response = getToken(tokenData)
+    }
+  }
   const accessToken = response.accessToken
   const username = response.username
 
@@ -95,7 +122,9 @@ OAuthInline.registerService('auth0', 2, null, function(query) {
    * The identity object will contain the username plus *all* properties
    * retrieved from the account and settings methods.
    */
-  const identity = { username, ...getAccount(config, username, accessToken) }
+
+  const account = getAccount(config, accessToken)
+  const identity = { username, ...account }
 
   /**
    * Build our serviceData object. This needs to contain
@@ -110,7 +139,7 @@ OAuthInline.registerService('auth0', 2, null, function(query) {
    */
   let serviceData = {
     accessToken,
-    expiresAt: +new Date() + 1000 * response.expiresIn,
+    expiresAt: new Date() + 1000 * response.expiresIn,
   }
   if (response.refreshToken) {
     serviceData.refreshToken = response.refreshToken
@@ -155,51 +184,33 @@ OAuthInline.registerService('auth0', 2, null, function(query) {
  * @return  {Object}              The response from the token request (see above)
  */
 
-const getTokens = async function(config, query) {
+const fetchTokensAsync = (config, query, callback) => {
   const endpoint = `https://${config.hostname}/oauth/token`
   /**
    * Attempt the exchange of code for token
    */
-  let response
-  try {
-    response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': `Meteor/${Meteor.release}`,
-      },
-      body: {
-        code: query.code,
-        client_id: config.clientId,
-        client_secret: config.secret,
-        grant_type: 'authorization_code',
-        redirect_uri: OAuth._redirectUri('auth0', config),
-      },
-    })
-  } catch (error) {
-    throw new Error(`Failed to complete OAuth handshake with Auth0. ${error.message}`, error)
-  }
-
-  const data = await response.json()
-
-  if (data.error) {
-    /**
-     * The http response was a json object with an error attribute
-     */
-    throw new Error(`Failed to complete OAuth handshake with Auth0. ${data.error}`)
-  } else {
-    /** The exchange worked. We have an object containing
-     *   access_token
-     *   refresh_token
-     *   expires_in
-     *   token_type
-     *   account_username
-     *
-     * Return an appropriately constructed object
-     */
-    return getToken(data)
-  }
+  fetch(endpoint, {
+    method: 'POST',
+    headers: new Headers({
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': `Meteor/${Meteor.release}`,
+    }),
+    body: {
+      code: query.code,
+      client_id: config.clientId,
+      client_secret: config.secret,
+      grant_type: 'authorization_code',
+      redirect_uri: OAuth._redirectUri('auth0', config),
+    },
+  }).then(response => {
+    response.json().then((data) => callback(undefined, data))
+  }).catch(error => {
+    callback(new Error(`Failed to complete OAuth handshake with Auth0. ${error.message}`), error)
+  })
 }
+
+const getTokens = Meteor.wrapAsync(fetchTokensAsync)
 
 /**
  * getAccount gets the basic Imgur account data
@@ -217,27 +228,20 @@ const getTokens = async function(config, query) {
  * @param   {String} accessToken  The OAuth access token
  * @return  {Object}              The response from the account request (see above)
  */
-const getAccount = async function(config, _username, accessToken) {
+const fetchAccountAsync = (config, accessToken, callback) => {
   const endpoint = `https://${config.hostname}/userinfo`
-  let accountObject
 
-  /**
-   * Note the strange .data.data - the HTTP.get returns the object in the response's data
-   * property. Also, Imgur returns the data we want in a data property of the response data
-   * Hence (response).data.data
-   */
-  try {
-    accountObject = await fetch(endpoint, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
-
-    return await accountObject.json()
-  } catch (err) {
-    const error = new Error(`Failed to fetch account data from Auth0. ${err.message}`)
-    error.response = err.response
-    throw error
-  }
+  fetch(endpoint, {
+    method: 'GET',
+    headers: new Headers({
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }),
+  }).then(response => {
+    response.json().then((data) => callback(undefined, data))
+  }).catch(error => {
+    callback(new Error(`Failed to fetch account data from Auth0. ${error.message}`, error))
+  })
 }
+const getAccount = Meteor.wrapAsync(fetchAccountAsync)
