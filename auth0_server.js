@@ -16,26 +16,20 @@ Auth0.whitelistedFields = ['id', 'email', 'picture', 'name']
 Accounts.oauth.registerService('auth0')
 
 Accounts.addAutopublishFields({
-  forLoggedInUser: _.map(
-    /**
-     * Logged in user gets whitelisted fields + accessToken + expiresAt.
-     */
-    Auth0.whitelistedFields.concat(['accessToken', 'expiresAt']), // don't publish refresh token
-    function (subfield) {
-      return 'services.auth0.' + subfield
-    }
-  ),
+  /**
+   * Logged in user gets whitelisted fields + accessToken + expiresAt.
+   */
+  forLoggedInUser: Auth0.whitelistedFields
+    .concat(['accessToken', 'expiresAt'])
+    .map(subfield => 'services.auth0.' + subfield), // don't publish refresh token
 
-  forOtherUsers: _.map(
-    /**
-     * Other users get whitelisted fields without emails, because even with
-     * autopublish, no legitimate web app should be publishing all users' emails.
-     */
-    _.without(Auth0.whitelistedFields, 'email', 'verified_email'),
-    function (subfield) {
-      return 'services.auth0.' + subfield
-    }
-  ),
+  /**
+   * Other users get whitelisted fields without emails, because even with
+   * autopublish, no legitimate web app should be publishing all users' emails.
+   */
+  forOtherUsers: Auth0.whitelistedFields
+    .filter(field => !['email', 'verified_email'].includes(field))
+    .map(subfield => 'services.auth0.' + subfield),
 })
 
 // Insert a configuration-stub into the database. All the config should be configured
@@ -51,7 +45,7 @@ Meteor.startup(() => {
   )
 })
 
-const getToken = function (authResponse) {
+const getToken = function(authResponse) {
   return {
     accessToken: authResponse.access_token,
     refreshToken: authResponse.refresh_token,
@@ -76,7 +70,7 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  *  handleOauthRequest = function(query) returns {serviceData, options} where options is optional
  * serviceData will end up in the user's services.imgur
  */
-OAuthInline.registerService('auth0', 2, null, function (query) {
+OAuthInline.registerService('auth0', 2, null, function(query) {
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */
@@ -101,7 +95,7 @@ OAuthInline.registerService('auth0', 2, null, function (query) {
    * The identity object will contain the username plus *all* properties
    * retrieved from the account and settings methods.
    */
-  const identity = _.extend({ username }, getAccount(config, username, accessToken))
+  const identity = { username, ...getAccount(config, username, accessToken) }
 
   /**
    * Build our serviceData object. This needs to contain
@@ -114,7 +108,7 @@ OAuthInline.registerService('auth0', 2, null, function (query) {
    *  created
    * We'll put the username into the user's profile
    */
-  const serviceData = {
+  let serviceData = {
     accessToken,
     expiresAt: +new Date() + 1000 * response.expiresIn,
   }
@@ -122,10 +116,9 @@ OAuthInline.registerService('auth0', 2, null, function (query) {
     serviceData.refreshToken = response.refreshToken
   }
 
-  _.extend(serviceData, identity)
-
+  serviceData = { ...serviceData, ...identity }
   serviceData.id = identity.sub
-  
+
   /**
    * Return the serviceData object along with an options object containing
    * the initial profile object with the username.
@@ -162,19 +155,20 @@ OAuthInline.registerService('auth0', 2, null, function (query) {
  * @return  {Object}              The response from the token request (see above)
  */
 
-const getTokens = function (config, query) {
+const getTokens = async function(config, query) {
   const endpoint = `https://${config.hostname}/oauth/token`
   /**
    * Attempt the exchange of code for token
    */
   let response
   try {
-    response = HTTP.post(endpoint, {
+    response = await fetch(endpoint, {
+      method: 'POST',
       headers: {
         Accept: 'application/json',
         'User-Agent': `Meteor/${Meteor.release}`,
       },
-      params: {
+      body: {
         code: query.code,
         client_id: config.clientId,
         client_secret: config.secret,
@@ -182,17 +176,17 @@ const getTokens = function (config, query) {
         redirect_uri: OAuth._redirectUri('auth0', config),
       },
     })
-  } catch (err) {
-    throw _.extend(new Error(`Failed to complete OAuth handshake with Auth0. ${err.message}`), {
-      response: err.response,
-    })
+  } catch (error) {
+    throw new Error(`Failed to complete OAuth handshake with Auth0. ${error.message}`, error)
   }
 
-  if (response.data.error) {
+  const data = await response.json()
+
+  if (data.error) {
     /**
      * The http response was a json object with an error attribute
      */
-    throw new Error(`Failed to complete OAuth handshake with Auth0. ${response.data.error}`)
+    throw new Error(`Failed to complete OAuth handshake with Auth0. ${data.error}`)
   } else {
     /** The exchange worked. We have an object containing
      *   access_token
@@ -203,7 +197,7 @@ const getTokens = function (config, query) {
      *
      * Return an appropriately constructed object
      */
-    return getToken(response.data)
+    return getToken(data)
   }
 }
 
@@ -223,7 +217,7 @@ const getTokens = function (config, query) {
  * @param   {String} accessToken  The OAuth access token
  * @return  {Object}              The response from the account request (see above)
  */
-const getAccount = function (config, username, accessToken) {
+const getAccount = async function(config, _username, accessToken) {
   const endpoint = `https://${config.hostname}/userinfo`
   let accountObject
 
@@ -233,16 +227,17 @@ const getAccount = function (config, username, accessToken) {
    * Hence (response).data.data
    */
   try {
-    accountObject = HTTP.get(endpoint, {
+    accountObject = await fetch(endpoint, {
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     })
 
-    return accountObject.data
+    return await accountObject.json()
   } catch (err) {
-    throw _.extend(new Error(`Failed to fetch account data from Auth0. ${err.message}`), {
-      response: err.response,
-    })
+    const error = new Error(`Failed to fetch account data from Auth0. ${err.message}`)
+    error.response = err.response
+    throw error
   }
 }
