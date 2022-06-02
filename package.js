@@ -15,7 +15,7 @@ Package.onUse(function(api) {
   api.use('ecmascript')
   api.use('oauth2', ['client', 'server'])
   api.use('oauth', ['client', 'server'])
-  api.use('fetch', ['server'])  
+  api.use('fetch', ['server'])
   api.use(['service-configuration'], ['client', 'server'])
   api.use(['random'], 'client')
   api.use('accounts-oauth', ['client', 'server'])
@@ -25,6 +25,7 @@ Package.onUse(function(api) {
 
   api.export('Auth0')
 
+  api.addFiles('end_of_inline_form_response.html', 'server', { isAsset: true })
   api.addFiles('auth0_server.js', 'server')
   api.addFiles('auth0_client.js', 'client')
 })

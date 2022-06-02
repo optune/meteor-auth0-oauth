@@ -158,7 +158,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   })
 }
 
-OAuth.startLogin = options => {
+OAuth.startLogin = async options => {
   if (!options.loginService) throw new Error('login service required')
 
   if (options.loginStyle === 'inline') {
@@ -278,7 +278,7 @@ Auth0.closeLock = (options = {}) => {
 }
 
 // Get cookie if external login
-const getCookie = (name) => {
+const getCookie = name => {
   // Split cookie string and get all individual name=value pairs in an array
   var cookieArr = document.cookie.split(';')
 
