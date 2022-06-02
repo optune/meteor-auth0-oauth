@@ -1,17 +1,22 @@
 Package.describe({
   name: 'optune:auth0-oauth',
-  version: '0.0.1',
-  summary: 'OAuth handler for Auth0',
+  version: '2.0.0',
+  summary: 'OAuth handler for Auth0 with Meteor Accounts including support for inline lock widget',
   documentation: 'README.md',
 })
 
+Npm.depends({
+  'auth0-lock': '11.32.2',
+  'body-parser': '1.19.2',
+})
+
 Package.onUse(function(api) {
-  api.versionsFrom(['1.3', '2.3'])
+  api.versionsFrom('2.3')
   api.use('ecmascript')
   api.use('oauth2', ['client', 'server'])
   api.use('oauth', ['client', 'server'])
-  api.use('http', ['server'])
-  api.use(['underscore', 'service-configuration'], ['client', 'server'])
+  api.use('fetch', ['server'])  
+  api.use(['service-configuration'], ['client', 'server'])
   api.use(['random'], 'client')
   api.use('accounts-oauth', ['client', 'server'])
   api.use('accounts-base', ['client', 'server'])
