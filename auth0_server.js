@@ -1,8 +1,7 @@
-import { Meteor } from 'meteor/meteor'
 import { Accounts } from 'meteor/accounts-base'
-import { OAuth } from 'meteor/oauth'
 import { fetch, Headers } from 'meteor/fetch'
-
+import { Meteor } from 'meteor/meteor'
+import { OAuth } from 'meteor/oauth'
 import { OAuthInline } from './oauth_inline_server'
 
 /**
@@ -22,15 +21,15 @@ Accounts.addAutopublishFields({
    */
   forLoggedInUser: Auth0.whitelistedFields
     .concat(['accessToken', 'expiresAt'])
-    .map(subfield => 'services.auth0.' + subfield), // don't publish refresh token
+    .map((subfield) => 'services.auth0.' + subfield), // don't publish refresh token
 
   /**
    * Other users get whitelisted fields without emails, because even with
    * autopublish, no legitimate web app should be publishing all users' emails.
    */
   forOtherUsers: Auth0.whitelistedFields
-    .filter(field => !['email', 'verified_email'].includes(field))
-    .map(subfield => 'services.auth0.' + subfield),
+    .filter((field) => !['email', 'verified_email'].includes(field))
+    .map((subfield) => 'services.auth0.' + subfield),
 })
 
 // Insert a configuration-stub into the database. All the config should be configured
@@ -46,7 +45,7 @@ Meteor.startup(() => {
   )
 })
 
-const getToken = function(authResponse) {
+const getToken = function (authResponse) {
   return {
     accessToken: authResponse.access_token,
     refreshToken: authResponse.refresh_token,
@@ -72,7 +71,7 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  * serviceData will end up in the user's services.imgur
  */
 
-OAuthInline.registerService('auth0', 2, null, query => {
+OAuthInline.registerService('auth0', 2, null, (query) => {
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */
@@ -189,6 +188,13 @@ const fetchTokensAsync = (config, query, callback) => {
   /**
    * Attempt the exchange of code for token
    */
+  const data = {
+    code: query.code,
+    client_id: config.clientId,
+    client_secret: config.secret,
+    grant_type: 'authorization_code',
+    redirect_uri: OAuth._redirectUri('auth0', config),
+  }
   fetch(endpoint, {
     method: 'POST',
     headers: new Headers({
@@ -196,18 +202,13 @@ const fetchTokensAsync = (config, query, callback) => {
       'Content-Type': 'application/json',
       'User-Agent': `Meteor/${Meteor.release}`,
     }),
-    body: {
-      code: query.code,
-      client_id: config.clientId,
-      client_secret: config.secret,
-      grant_type: 'authorization_code',
-      redirect_uri: OAuth._redirectUri('auth0', config),
-    },
-  }).then(response => {
-    response.json().then((data) => callback(undefined, data))
-  }).catch(error => {
-    callback(new Error(`Failed to complete OAuth handshake with Auth0. ${error.message}`), error)
+    body: JSON.stringify(data),
   })
+    .then((response) => response.json())
+    .then((data) => callback(undefined, data))
+    .catch((error) => {
+      callback(new Error(`Failed to fetch OAuth token information from Auth0. ${error.message}`), error)
+    })
 }
 
 const getTokens = Meteor.wrapAsync(fetchTokensAsync)
@@ -238,10 +239,11 @@ const fetchAccountAsync = (config, accessToken, callback) => {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     }),
-  }).then(response => {
-    response.json().then((data) => callback(undefined, data))
-  }).catch(error => {
-    callback(new Error(`Failed to fetch account data from Auth0. ${error.message}`, error))
   })
+    .then((response) => response.json())
+    .then((data) => callback(undefined, data))
+    .catch((error) => {
+      callback(new Error(`Failed to fetch account data from Auth0. ${error.message}`, error))
+    })
 }
 const getAccount = Meteor.wrapAsync(fetchAccountAsync)
