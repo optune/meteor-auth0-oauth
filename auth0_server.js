@@ -196,18 +196,20 @@ const fetchTokensAsync = (config, query, callback) => {
       'Content-Type': 'application/json',
       'User-Agent': `Meteor/${Meteor.release}`,
     }),
-    body: {
+    body: JSON.stringify({
       code: query.code,
       client_id: config.clientId,
       client_secret: config.secret,
       grant_type: 'authorization_code',
       redirect_uri: OAuth._redirectUri('auth0', config),
-    },
-  }).then(response => {
-    response.json().then((data) => callback(undefined, data))
-  }).catch(error => {
-    callback(new Error(`Failed to complete OAuth handshake with Auth0. ${error.message}`), error)
+    }),
   })
+    .then(response => {
+      response.json().then(data => callback(undefined, data))
+    })
+    .catch(error => {
+      callback(new Error(`Failed to complete OAuth handshake with Auth0. ${error.message}`), error)
+    })
 }
 
 const getTokens = Meteor.wrapAsync(fetchTokensAsync)
@@ -238,10 +240,12 @@ const fetchAccountAsync = (config, accessToken, callback) => {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     }),
-  }).then(response => {
-    response.json().then((data) => callback(undefined, data))
-  }).catch(error => {
-    callback(new Error(`Failed to fetch account data from Auth0. ${error.message}`, error))
   })
+    .then(response => {
+      response.json().then(data => callback(undefined, data))
+    })
+    .catch(error => {
+      callback(new Error(`Failed to fetch account data from Auth0. ${error.message}`, error))
+    })
 }
 const getAccount = Meteor.wrapAsync(fetchAccountAsync)
