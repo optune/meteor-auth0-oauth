@@ -1,8 +1,7 @@
-import { Meteor } from 'meteor/meteor'
 import { Accounts } from 'meteor/accounts-base'
-import { OAuth } from 'meteor/oauth'
 import { fetch, Headers } from 'meteor/fetch'
-
+import { Meteor } from 'meteor/meteor'
+import { OAuth } from 'meteor/oauth'
 import { OAuthInline } from './oauth_inline_server'
 
 /**
@@ -189,6 +188,13 @@ const fetchTokensAsync = (config, query, callback) => {
   /**
    * Attempt the exchange of code for token
    */
+  const data = {
+    code: query.code,
+    client_id: config.clientId,
+    client_secret: config.secret,
+    grant_type: 'authorization_code',
+    redirect_uri: OAuth._redirectUri('auth0', config),
+  }
   fetch(endpoint, {
     method: 'POST',
     headers: new Headers({
@@ -196,19 +202,15 @@ const fetchTokensAsync = (config, query, callback) => {
       'Content-Type': 'application/json',
       'User-Agent': `Meteor/${Meteor.release}`,
     }),
-    body: JSON.stringify({
-      code: query.code,
-      client_id: config.clientId,
-      client_secret: config.secret,
-      grant_type: 'authorization_code',
-      redirect_uri: OAuth._redirectUri('auth0', config),
-    }),
+    body: JSON.stringify(data),
   })
-    .then(response => {
-      response.json().then(data => callback(undefined, data))
-    })
+    .then(response => response.json())
+    .then(data => callback(undefined, data))
     .catch(error => {
-      callback(new Error(`Failed to complete OAuth handshake with Auth0. ${error.message}`), error)
+      callback(
+        new Error(`Failed to fetch OAuth token information from Auth0. ${error.message}`),
+        error
+      )
     })
 }
 
@@ -241,9 +243,8 @@ const fetchAccountAsync = (config, accessToken, callback) => {
       'Content-Type': 'application/json',
     }),
   })
-    .then(response => {
-      response.json().then(data => callback(undefined, data))
-    })
+    .then(response => response.json())
+    .then(data => callback(undefined, data))
     .catch(error => {
       callback(new Error(`Failed to fetch account data from Auth0. ${error.message}`, error))
     })
