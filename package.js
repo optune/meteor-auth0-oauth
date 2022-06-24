@@ -23,9 +23,12 @@ Package.onUse(function(api) {
   // Export Accounts (etc) to packages using this one.
   api.imply('accounts-base', ['client', 'server'])
 
-  api.export('Auth0')
-
-  api.addFiles('end_of_inline_form_response.html', 'server', { isAsset: true })
+  api.addFiles('auth0_client.js', 'web')
   api.addFiles('auth0_server.js', 'server')
-  api.addFiles('auth0_client.js', 'client')
+  api.addFiles('oauth_inline_server.js', 'server')
+
+  api.addAssets(['end_of_inline_form_response.html'], 'server')
+  api.addAssets(['end_of_inline_form_response.js'], 'client')
+
+  api.export('Auth0')
 })
