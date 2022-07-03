@@ -18,6 +18,7 @@ OAuth._loginStyle = (service, config, options) => {
   if (Meteor.isCordova) {
     return 'popup'
   }
+  console.log(' inline _loginStyle')
 
   let loginStyle = (options && options.loginStyle) || config.loginStyle || 'popup'
 
@@ -38,7 +39,6 @@ OAuth._loginStyle = (service, config, options) => {
 
   return loginStyle
 }
-
 
 // Get cookie if external login
 function getCookie(name) {

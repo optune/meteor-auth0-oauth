@@ -16,23 +16,15 @@ Auth0Inline.showLock = async options => {
   const isSignup = options.loginType === 'signup'
   const nonce = Random.secret()
   const params = {
-    state: OAuth._stateParam(
-      options.isInlineRedirect ? 'redirect' : 'inline',
-      options.credentialToken,
-      options.callbackUrl
-    ),
+    state: OAuth._stateParam('inline', options.credentialToken, options.callbackUrl),
     scope: 'openid profile email',
   }
 
-  console.log('showLock')
-  console.log({ optionsShowLock: options })
   const lockOptions = {
     configurationBaseUrl: options.clientConfigurationBaseUrl,
-    additionalSignUpFields: options.additionalSignUpFields,
     auth: {
-      redirect: options.isInlineRedirect,
+      redirect: false,
       responseType: 'token id_token',
-      redirectUrl: options.isInlineRedirect ? options.redirectUrl : undefined,
       params,
       nonce,
       sso: true,
@@ -50,8 +42,6 @@ Auth0Inline.showLock = async options => {
     container: options.lock.containerId,
     allowLogin: isLogin,
     allowSignUp: isSignup,
-    showTerms: options.showTerms,
-    mustAcceptTerms: options.mustAcceptTerms,
   }
 
   // Close (destroy) previous lock instance
@@ -71,37 +61,27 @@ Auth0Inline.showLock = async options => {
     Auth0Inline.onAuthenticated(result, options)
   })
 
-  if (options.onlyShowLock) {
-    // Show lock on error as user needs to sign in again
-    Auth0Inline.lock.on('hide', () => {
-      window.history.replaceState({}, document.title, '.')
-    })
+  // Check for active login session in Auth0 (silent autentication)
+  Auth0Inline.lock.checkSession(
+    {
+      responseType: 'token id_token',
+      nonce,
+    },
+    (error, result) => {
+      if (error) {
+        // Show lock on error as user needs to sign in again
+        Auth0Inline.lock.on('hide', () => {
+          window.history.replaceState({}, document.title, '.')
+        })
 
-    // Show lock
-    Auth0Inline.lock.show()
-  } else {
-    // Check for active login session in Auth0 (silent autentication)
-    Auth0Inline.lock.checkSession(
-      {
-        responseType: 'token id_token',
-        nonce,
-      },
-      (error, result) => {
-        if (error) {
-          // Show lock on error as user needs to sign in again
-          Auth0Inline.lock.on('hide', () => {
-            window.history.replaceState({}, document.title, '.')
-          })
-
-          // Show lock
-          Auth0Inline.lock.show()
-        } else {
-          // Authenticate the user in Meteor
-          Auth0Inline.onAuthenticated(result, options)
-        }
+        // Show lock
+        Auth0Inline.lock.show()
+      } else {
+        // Authenticate the user in Meteor
+        Auth0Inline.onAuthenticated(result, options)
       }
-    )
-  }
+    }
+  )
 }
 
 Auth0Inline.onAuthenticated = (result, options) => {
