@@ -240,6 +240,7 @@ const escapeString = s => {
 const renderEndOfLoginResponse = options => {
   // Escape everything just to be safe (we've already checked that some
   // of this data -- the token and secret -- are safe).
+
   const config = {
     settings: {
       AUTH0_CLIENT_ID: Meteor.settings.public.AUTH0_CLIENT_ID,

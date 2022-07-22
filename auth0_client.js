@@ -15,6 +15,9 @@ const SIGNUP_AS = '/_signup'
 Auth0 = {
   lock: undefined,
 }
+__meteor_runtime_config__.ROOT_URL = Meteor.settings.public.ORIGIN_AS_ROOT_URL
+  ? window.location.origin
+  : __meteor_runtime_config__.ROOT_URL
 
 Accounts.oauth.registerService('auth0')
 
@@ -145,7 +148,6 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginPath: path,
     loginType: options.type,
     redirectUrl,
-    callbackUrl,
     credentialRequestCompleteCallback,
     credentialToken,
     showTerms: options.showTerms,

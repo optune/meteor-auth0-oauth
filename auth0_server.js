@@ -185,6 +185,7 @@ OAuthInline.registerService('auth0', 2, null, query => {
 
 const fetchTokensAsync = (config, query, callback) => {
   const endpoint = `https://${config.hostname}/oauth/token`
+
   /**
    * Attempt the exchange of code for token
    */
@@ -195,6 +196,7 @@ const fetchTokensAsync = (config, query, callback) => {
     grant_type: 'authorization_code',
     redirect_uri: OAuth._redirectUri('auth0', config),
   }
+
   fetch(endpoint, {
     method: 'POST',
     headers: new Headers({
