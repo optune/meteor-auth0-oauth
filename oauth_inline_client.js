@@ -39,7 +39,6 @@ OAuth._loginStyle = (service, config, options) => {
   return loginStyle
 }
 
-
 // Get cookie if external login
 function getCookie(name) {
   // Split cookie string and get all individual name=value pairs in an array

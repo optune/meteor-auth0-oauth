@@ -15,7 +15,7 @@ Auth0Inline = {
 //   return Base64.encode(JSON.stringify(state))
 // }
 
-Auth0Inline.closeLock = function (containerId) {
+Auth0Inline.closeLock = function(containerId) {
   Auth0Inline.lock = undefined
 
   if (containerId > '') {
@@ -29,8 +29,9 @@ Auth0Inline.closeLock = function (containerId) {
   }
 }
 
-Auth0Inline.launchLock = function ({ containerId, config }) {
+Auth0Inline.launchLock = function({ containerId, config }) {
   // var { credentialToken, loginType, lock, redirectUrl, state, nonce, loginPath } = config
+  console.log('LAUCNH LOCK IFRAME')
 
   if (config.credentialToken) {
     var isLogin = config.loginType === 'login'
@@ -81,10 +82,10 @@ Auth0Inline.launchLock = function ({ containerId, config }) {
         responseType: 'token id_token',
         nonce,
       },
-      function (error, result) {
+      function(error, result) {
         if (error) {
           // Show lock on error as user needs to sign in again
-          Auth0Inline.lock.on('hide', function () {
+          Auth0Inline.lock.on('hide', function() {
             window.history.replaceState({}, document.title, '.')
           })
 
