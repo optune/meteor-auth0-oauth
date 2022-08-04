@@ -31,7 +31,6 @@ Auth0Inline.closeLock = function(containerId) {
 
 Auth0Inline.launchLock = function({ containerId, config }) {
   // var { credentialToken, loginType, lock, redirectUrl, state, nonce, loginPath } = config
-  console.log('LAUCNH LOCK IFRAME')
 
   if (config.credentialToken) {
     var isLogin = config.loginType === 'login'

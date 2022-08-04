@@ -15,9 +15,6 @@ const SIGNUP_AS = '/_signup'
 Auth0 = {
   lock: undefined,
 }
-__meteor_runtime_config__.ROOT_URL = Meteor.settings.public.ORIGIN_AS_ROOT_URL
-  ? window.location.origin
-  : __meteor_runtime_config__.ROOT_URL
 
 Accounts.oauth.registerService('auth0')
 

@@ -15,6 +15,10 @@ Auth0.whitelistedFields = ['id', 'email', 'picture', 'name']
 
 Accounts.oauth.registerService('auth0')
 
+// __meteor_runtime_config__.ROOT_URL = Meteor.settings.public.ORIGIN_AS_ROOT_URL
+//   ? Meteor.settings.public.DOMAIN_COM
+//   : __meteor_runtime_config__.ROOT_URL
+
 Accounts.addAutopublishFields({
   /**
    * Logged in user gets whitelisted fields + accessToken + expiresAt.
@@ -75,6 +79,7 @@ OAuthInline.registerService('auth0', 2, null, query => {
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */
+
   const config = {
     clientId: Meteor.settings.public.AUTH0_CLIENT_ID,
     secret: Meteor.settings.private.AUTH0_CLIENT_SECRET,
