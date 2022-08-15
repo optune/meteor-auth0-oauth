@@ -85,6 +85,7 @@ Auth0Inline.showLock = async options => {
 }
 
 Auth0Inline.onAuthenticated = (result, options) => {
+  console.log('ONAUTHENTICATED INSIDE')
   options.authenticatedCallback?.()
 
   // Get lock container element

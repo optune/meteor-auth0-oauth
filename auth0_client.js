@@ -107,7 +107,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   // Determine path
   let path = options.path || ''
   path = path.startsWith('/') ? path.substring(1) : path
-  const callbackUrl = `${rootUrl}${path}`
+  const callbackUrl = `${options.callbackRedirect || rootUrl}${path}`
 
   /**
    * Imgur requires response_type and client_id
@@ -145,7 +145,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginStyle,
     loginType: options.type,
     loginUrl,
-    popupOptions: config.popupOptions || { height: 600 },
+    popupOptions: config.popupOptions || { height: 600 },
     redirectUrl,
   })
 }
@@ -161,7 +161,7 @@ OAuth.startLogin = options => {
 }
 
 // Get cookie if external login
-const getCookie = (name) => {
+const getCookie = name => {
   // Split cookie string and get all individual name=value pairs in an array
   var cookieArr = document.cookie.split(';')
 
