@@ -36,7 +36,6 @@ export const showInlineLoginForm = options => {
       'message',
       event => {
         if (event.data.type === 'AUTH0_RESPONSE') {
-          console.log('SHOW FORM INLINE INSIDE')
           loginElement.removeChild(iFrame)
 
           const origin = getOrigin(options.rootUrl || Meteor.absoluteUrl(''))
