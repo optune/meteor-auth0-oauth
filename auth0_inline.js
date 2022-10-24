@@ -12,6 +12,7 @@ const getOrigin = rootUrl => {
 Auth0Inline.showLock = async options => {
   OAuth.saveDataForRedirect(options.loginService, options.credentialToken)
 
+  console.log({ options })
   const isLogin = options.loginType === 'login'
   const isSignup = options.loginType === 'signup'
   const nonce = Random.secret()
@@ -20,6 +21,7 @@ Auth0Inline.showLock = async options => {
     scope: 'openid profile email',
   }
 
+  console.log({ params })
   const lockOptions = {
     configurationBaseUrl: options.clientConfigurationBaseUrl,
     auth: {
@@ -47,7 +49,10 @@ Auth0Inline.showLock = async options => {
   // Close (destroy) previous lock instance
   Auth0Inline.closeLock(options)
 
+  console.log({ options })
   const { Auth0Lock } = await import('auth0-lock')
+
+  console.log('before new lock')
 
   // Create and configure new auth0 lock instance
   Auth0Inline.lock = new Auth0Lock(
@@ -56,8 +61,11 @@ Auth0Inline.showLock = async options => {
     lockOptions
   )
 
+  console.log('after new lock')
+
   // Authenticate the user in Meteor
   Auth0Inline.lock.on('authenticated', result => {
+    console.log({ result })
     Auth0Inline.onAuthenticated(result, options)
   })
 
@@ -68,6 +76,7 @@ Auth0Inline.showLock = async options => {
       nonce,
     },
     (error, result) => {
+      console.log({ error, result })
       if (error) {
         // Show lock on error as user needs to sign in again
         Auth0Inline.lock.on('hide', () => {
@@ -87,6 +96,7 @@ Auth0Inline.showLock = async options => {
 Auth0Inline.onAuthenticated = (result, options) => {
   options.authenticatedCallback?.()
 
+  console.log('on authenticated')
   // Get lock container element
   const lockContainer = document.getElementById(options.lock.containerId)
   let iFrame
@@ -99,6 +109,7 @@ Auth0Inline.onAuthenticated = (result, options) => {
     window.addEventListener(
       'message',
       event => {
+        console.log({ event })
         if (event.data.type === 'AUTH0_RESPONSE') {
           lockContainer.removeChild(iFrame)
 

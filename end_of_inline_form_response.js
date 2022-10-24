@@ -1,5 +1,5 @@
 // NOTE: This file is added to the client as asset and hence ecmascript package has no effect here.
-(function () {
+;(function() {
   var config = JSON.parse(document.getElementById('config').innerHTML)
 
   if (config.setCredentialToken && config.rootUrl) {

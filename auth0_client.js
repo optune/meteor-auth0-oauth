@@ -51,6 +51,8 @@ Auth0._loginStyle = function(config, options) {
 Auth0._rootUrl = function(options) {
   let rootUrl = Meteor.absoluteUrl('')
 
+  console.log({ rootUrl })
+
   if (options.rootUrl > '') {
     rootUrl = options.rootUrl.endsWith('/') ? options.rootUrl : `${options.rootUrl}/`
   }
@@ -108,6 +110,8 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   let path = options.path || ''
   path = path.startsWith('/') ? path.substring(1) : path
   const callbackUrl = `${options.callbackRedirect || rootUrl}${path}`
+
+  console.log({ callbackUrl })
 
   /**
    * Imgur requires response_type and client_id
