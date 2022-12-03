@@ -134,10 +134,12 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginUrl = loginUrl + '#' + options.type
   }
 
+  console.log({ options })
   /**
    * Client initiates OAuth login request (boilerplate)
    */
   OAuth.startLogin({
+    additionalSignUpFields: options.additionalSignUpFields,
     authenticatedCallback: options.authenticatedCallback,
     callbackUrl,
     clientConfigurationBaseUrl: config.clientConfigurationBaseUrl,
@@ -149,8 +151,11 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginStyle,
     loginType: options.type,
     loginUrl,
+    mustAcceptTerms: options.mustAcceptTerms,
+    onlyShowLock: options.onlyShowLock,
     popupOptions: config.popupOptions || { height: 600 },
     redirectUrl,
+    showTerms: options.showTerms,
   })
 }
 

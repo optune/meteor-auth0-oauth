@@ -23,7 +23,6 @@ Auth0Inline.showLock = async options => {
 
   console.log({ params })
   const lockOptions = {
-    configurationBaseUrl: options.clientConfigurationBaseUrl,
     auth: {
       redirect: false,
       responseType: 'token id_token',
@@ -33,17 +32,21 @@ Auth0Inline.showLock = async options => {
     },
     allowedConnections:
       options.lock.connections || (isSignup && ['Username-Password-Authentication']) || null,
-    rememberLastLogin: true,
+    additionalSignUpFields: options.additionalSignUpFields,
+    allowLogin: isLogin,
+    allowSignUp: isSignup,
+    avatar: null,
+    closable: true,
+    configurationBaseUrl: options.clientConfigurationBaseUrl,
+    container: options.lock.containerId,
     languageDictionary: options.lock.languageDictionary,
+    mustAcceptTerms: options.mustAcceptTerms,
+    rememberLastLogin: true,
+    showTerms: options.showTerms,
     theme: {
       logo: options.lock.logo,
       primaryColor: options.lock.primaryColor,
     },
-    avatar: null,
-    closable: true,
-    container: options.lock.containerId,
-    allowLogin: isLogin,
-    allowSignUp: isSignup,
   }
 
   // Close (destroy) previous lock instance
