@@ -51,8 +51,6 @@ Auth0._loginStyle = function(config, options) {
 Auth0._rootUrl = function(options) {
   let rootUrl = Meteor.absoluteUrl('')
 
-  console.log({ rootUrl })
-
   if (options.rootUrl > '') {
     rootUrl = options.rootUrl.endsWith('/') ? options.rootUrl : `${options.rootUrl}/`
   }
@@ -111,8 +109,6 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
   path = path.startsWith('/') ? path.substring(1) : path
   const callbackUrl = `${options.callbackRedirect || rootUrl}${path}`
 
-  console.log({ callbackUrl })
-
   /**
    * Imgur requires response_type and client_id
    * We use state to roundtrip a random token to help protect against CSRF (boilerplate)
@@ -134,7 +130,6 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginUrl = loginUrl + '#' + options.type
   }
 
-  console.log({ options })
   /**
    * Client initiates OAuth login request (boilerplate)
    */
