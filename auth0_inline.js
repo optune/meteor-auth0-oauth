@@ -20,9 +20,11 @@ Auth0Inline.showLock = async options => {
     scope: 'openid profile email',
   }
 
+  console.log({ optiuonsInside: options })
   const lockOptions = {
     auth: {
-      redirect: false,
+      redirect: true,
+      redirectUrl: options.redirectUrl,
       responseType: 'token id_token',
       params,
       nonce,
@@ -46,6 +48,7 @@ Auth0Inline.showLock = async options => {
       primaryColor: options.lock.primaryColor,
     },
   }
+  console.log({ lockOptions })
 
   // Close (destroy) previous lock instance
   Auth0Inline.closeLock(options)

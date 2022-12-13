@@ -130,6 +130,7 @@ Auth0.requestCredential = function(options, credentialRequestCompleteCallback) {
     loginUrl = loginUrl + '#' + options.type
   }
 
+  console.log({ options })
   /**
    * Client initiates OAuth login request (boilerplate)
    */
