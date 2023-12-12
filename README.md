@@ -21,12 +21,18 @@ your API keys (Securing API Keys)[https://guide.meteor.com/security.html#api-key
   /* ... other private keys */
 }
 ```
+
 ### Launch Login
 Then, you can simply initiate auth with on the client:
 ``` Meteor.loginWithAuth0() ```
 
+### Onescreener Branches
+```master-stable``` - used for Live pages
 
-###Supported Options
+```master-stable-onescreener-editor``` - used for Onescreener Editor
+
+
+### Supported Options
 Value | Default | Description
 --- | --- | ---
 `loginStyle` | 'popup' | choose between *popup* (default) and *redirect*
