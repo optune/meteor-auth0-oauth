@@ -15,11 +15,16 @@ Package.onUse(function(api) {
   api.use(['random'], 'client');
   api.use('accounts-oauth', ['client', 'server']);
   api.use('accounts-base', ['client', 'server']);
+
   // Export Accounts (etc) to packages using this one.
-  api.imply('accounts-base', ['client', 'server']);
+  api.imply('accounts-base', ['client', 'server'])
 
-  api.export('Auth0');
+  api.addFiles('auth0_client.js', 'web')
+  api.addFiles('auth0_server.js', 'server')
+  api.addFiles('oauth_inline_server.js', 'server')
 
-  api.addFiles('auth0_server.js', 'server');
-  api.addFiles('auth0_client.js', 'client');
-});
+  api.addAssets(['end_of_inline_form_response.html'], 'server')
+  api.addAssets(['end_of_inline_form_response.js'], 'client')
+
+  api.export('Auth0')
+})
