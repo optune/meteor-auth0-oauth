@@ -1,12 +1,12 @@
 Package.describe({
   name: 'optune:auth0-oauth',
-  version: '0.0.1',
+  version: '2.5.8',
   summary: 'OAuth handler for Auth0',
   documentation: 'README.md'
 });
 
 Package.onUse(function(api) {
-  api.versionsFrom('1.3');
+  api.versionsFrom('2.3');
   api.use('ecmascript');
   api.use('oauth2', ['client', 'server']);
   api.use('oauth', ['client', 'server']);
