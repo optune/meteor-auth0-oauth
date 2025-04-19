@@ -20,6 +20,8 @@ Auth0Inline.showLock = async options => {
     scope: 'openid profile email',
   }
 
+  console.log('auth0_inline.js:showLock', options)
+
   const lockOptions = {
     auth: {
       redirect: false,
@@ -61,6 +63,8 @@ Auth0Inline.showLock = async options => {
 
   // Authenticate the user in Meteor
   Auth0Inline.lock.on('authenticated', result => {
+    console.log('inline authenticated - result: ', result)
+    console.log('inline authenticated - options: ', options)
     Auth0Inline.onAuthenticated(result, options)
   })
 
@@ -71,6 +75,10 @@ Auth0Inline.showLock = async options => {
       nonce,
     },
     (error, result) => {
+      console.log('inline checkSession - result: ', result)
+      console.log('inline checkSession - options: ', options)
+      console.log('inline checkSession - error: ', error)
+  
       if (error) {
         // Show lock on error as user needs to sign in again
         Auth0Inline.lock.on('hide', () => {

@@ -54,6 +54,20 @@ const getToken = function (authResponse) {
   }
 }
 
+const verifyRecaptcha = (token) => {
+  const secret = Meteor.settings.private.RECAPTCHA_SECRET;
+  const response = HTTP.post('https://www.google.com/recaptcha/api/siteverify', {
+    params: {
+      secret,
+      response: token
+    }
+  });
+  if (!response.data.success) {
+    throw new Meteor.Error('recaptcha-failed', 'Invalid reCAPTCHA');
+  }
+}
+
+
 /**
  * Boilerplate hook for use by underlying Meteor code
  */
@@ -71,7 +85,19 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  * serviceData will end up in the user's services.imgur
  */
 
-OAuthInline.registerService('auth0', 2, null, (query) => {
+OAuthInline.registerService('auth0', 2, null, (query, ...rest) => {
+
+  console.log('query:', query)
+  console.log('rest:', rest)
+
+  // const recaptchaToken = options?.recaptchaToken;
+  // if (!recaptchaToken) {
+  //   throw new Meteor.Error('recaptcha-missing', 'reCAPTCHA token required');
+  // }
+
+  // verifyRecaptcha(recaptchaToken);
+
+
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */
