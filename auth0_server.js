@@ -1,4 +1,5 @@
 import { Accounts } from 'meteor/accounts-base'
+import { check, Match } from 'meteor/check'
 import { fetch, Headers } from 'meteor/fetch'
 import { Meteor } from 'meteor/meteor'
 import { OAuth } from 'meteor/oauth'
@@ -54,18 +55,123 @@ const getToken = function (authResponse) {
   }
 }
 
-const verifyRecaptcha = (token) => {
-  const secret = Meteor.settings.private.RECAPTCHA_SECRET;
-  const response = HTTP.post('https://www.google.com/recaptcha/api/siteverify', {
-    params: {
-      secret,
+/**
+ * Classic v2/v3 verification using secret + fetch to Google endpoint
+ */
+const verifyRecaptchaClassic = async (token) => {
+  const secret = Meteor.settings.private.RECAPTCHA_SECRET_KEY
+  const endpoint = 'https://www.google.com/recaptcha/api/siteverify'
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: new Headers({
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+      'User-Agent': `Meteor/${Meteor.release}`,
+    }),
+    body: new URLSearchParams({
+      secret: secret,
       response: token
-    }
-  });
-  if (!response.data.success) {
-    throw new Meteor.Error('recaptcha-failed', 'Invalid reCAPTCHA');
+    }),
+  })
+
+  if (!res.ok) {
+    throw new Meteor.Error('recaptcha-http-failed', `HTTP ${res.status}`)
   }
+
+  const data = await res.json()
+
+  if (!data.success) {
+    throw new Meteor.Error('recaptcha-failed', 'Invalid reCAPTCHA')
+  }
+
+  return { success: true, score: data.score, action: data.action }
 }
+
+/**
+ * Enterprise verification using @google-cloud/recaptcha-enterprise
+ * Falls back to classic verification if project ID or site key is not configured
+ */
+const verifyRecaptcha = async (token, action) => {
+  const projectId = Meteor.settings.private?.RECAPTCHA_ENTERPRISE_PROJECT_ID
+  const siteKey =
+    Meteor.settings.public?.RECAPTCHA_SITE_KEY
+
+  if (!projectId || !siteKey) {
+    return verifyRecaptchaClassic(token)
+  }
+
+  // Lazy-require to avoid loading if not used
+  const { RecaptchaEnterpriseServiceClient } = Npm.require(
+    '@google-cloud/recaptcha-enterprise'
+  )
+
+  const client = new RecaptchaEnterpriseServiceClient()
+  const parent = client.projectPath(projectId)
+
+  const [response] = await client.createAssessment({
+    parent,
+    assessment: {
+      event: {
+        token,
+        siteKey,
+      },
+    },
+  })
+
+  const props = response.tokenProperties || {}
+  if (!props.valid) {
+    throw new Meteor.Error('recaptcha-invalid-token', String(props.invalidReason || 'invalid'))
+  }
+
+  // If an action was provided, ensure it matches
+  if (action && props.action && props.action !== action) {
+    throw new Meteor.Error('recaptcha-invalid-action', 'Unexpected reCAPTCHA action')
+  }
+
+  const score = response.riskAnalysis?.score
+  const reasons = response.riskAnalysis?.reasons
+
+  const minScore =
+    typeof Meteor.settings.private?.RECAPTCHA_MIN_SCORE === 'number'
+      ? Meteor.settings.private.RECAPTCHA_MIN_SCORE
+      : 0
+
+  if (typeof score === 'number' && score < minScore) {
+    throw new Meteor.Error('recaptcha-low-score', `Score ${score} below threshold ${minScore}`)
+  }
+
+  return { success: true, score, action: props.action, reasons }
+}
+
+/**
+ * Meteor method to verify reCAPTCHA token
+ */
+Meteor.methods({
+  async 'auth0.verifyRecaptcha'(arg) {
+    check(
+      arg,
+      Match.OneOf(String, {
+        token: String,
+        action: Match.Optional(String),
+      })
+    )
+
+    const token = typeof arg === 'string' ? arg : arg.token
+    const action = typeof arg === 'string' ? undefined : arg.action
+
+    if (!token) {
+      throw new Meteor.Error('recaptcha-missing', 'reCAPTCHA token is required')
+    }
+
+    try {
+      const result = await verifyRecaptcha(token, action)
+      return result
+    } catch (error) {
+      throw new Meteor.Error('recaptcha-verification-failed', error.message)
+    }
+  },
+})
 
 
 /**

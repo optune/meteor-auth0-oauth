@@ -8,6 +8,7 @@ Package.describe({
 Npm.depends({
   'auth0-lock': '11.32.2',
   'body-parser': '1.19.2',
+  '@google-cloud/recaptcha-enterprise': '6.3.0',
 })
 
 Package.onUse(function(api) {
