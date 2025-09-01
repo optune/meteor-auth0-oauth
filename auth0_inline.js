@@ -20,8 +20,6 @@ Auth0Inline.showLock = async options => {
     scope: 'openid profile email',
   }
 
-  console.log('auth0_inline.js:showLock', options)
-
   const lockOptions = {
     auth: {
       redirect: false,
@@ -58,15 +56,41 @@ Auth0Inline.showLock = async options => {
   Auth0Inline.lock = new Auth0Lock(
     Meteor.settings.public.AUTH0_CLIENT_ID,
     Meteor.settings.public.AUTH0_DOMAIN,
-    lockOptions
+    {...lockOptions, 
+      hooks: {
+        signingUp: function (context, cb, ...rest) {
+          const token = window['onescreener-recaptcha-token']
+
+          if (!token) {
+            throw { code: 'hook_error', description: 'Human check failed. Please try again.' };
+          }
+
+          Meteor.call('auth0.verifyRecaptcha', token, (error, result) => {
+            if (error) {
+              throw { code: 'hook_error', description: 'Human check failed. Please try again.' };
+            }
+
+            cb();
+          })
+        }
+      }
+    }
+
   )
 
   // Authenticate the user in Meteor
   Auth0Inline.lock.on('authenticated', result => {
-    console.log('inline authenticated - result: ', result)
-    console.log('inline authenticated - options: ', options)
     Auth0Inline.onAuthenticated(result, options)
   })
+
+  // Auth0Inline.lock.on('authorization_error', (error) => {
+  // })
+
+  // Auth0Inline.lock.on('signin submit', (...args) => {
+  // })
+
+  // Auth0Inline.lock.on('signup submit', (...args) => {
+  // })
 
   // Check for active login session in Auth0 (silent autentication)
   Auth0Inline.lock.checkSession(
@@ -75,10 +99,6 @@ Auth0Inline.showLock = async options => {
       nonce,
     },
     (error, result) => {
-      console.log('inline checkSession - result: ', result)
-      console.log('inline checkSession - options: ', options)
-      console.log('inline checkSession - error: ', error)
-  
       if (error) {
         // Show lock on error as user needs to sign in again
         Auth0Inline.lock.on('hide', () => {
@@ -164,8 +184,13 @@ Auth0Inline.closeLock = (options = {}) => {
     const lockContainer = document.getElementById(options.lock.containerId)
 
     // As long as <ul> has a child node, remove it
-    if (lockContainer && lockContainer.hasChildNodes()) {
-      lockContainer.removeChild(lockContainer.firstChild)
+    // if (lockContainer && lockContainer.hasChildNodes()) {
+    //   lockContainer.removeChild(lockContainer.firstChild)
+    // }
+    if (lockContainer) {
+      while (lockContainer.firstChild) {
+        lockContainer.removeChild(lockContainer.firstChild)
+      }
     }
   }
 }

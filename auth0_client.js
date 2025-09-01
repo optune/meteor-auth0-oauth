@@ -19,7 +19,6 @@ Auth0 = {}
 Accounts.oauth.registerService('auth0')
 
 Meteor.loginWithAuth0 = function(options, callback) {
-  console.log('Meteor.loginWithAuth0', options)
 
   /**
    * support (options, callback) and (callback)
@@ -32,62 +31,8 @@ Meteor.loginWithAuth0 = function(options, callback) {
   options = options || {}
   options.callback = callback
 
-  // // Extract captcha token from additionalSignUpFields
-  // const captchaToken = options.additionalSignUpFields && 
-  //   options.additionalSignUpFields.find(field => field.name === 'captcha')?.value
-
-  // // For signup operations, captcha is required
-  // if (options.type === 'signup') {
-  //   if (!captchaToken) {
-  //     console.error('Captcha verification failed: captcha token is required for signup')
-  //     const error = new Meteor.Error('captcha-required', 'Captcha verification is required for signup')
-  //     if (callback) {
-  //       callback(error)
-  //     }
-  //     return
-  //   }
-    
-  //   console.log('Verifying captcha token before Auth0 signup')
-    
-  //   Meteor.call('auth0.verifyRecaptcha', captchaToken, (error, result) => {
-  //     if (error) {
-  //       console.error('Captcha verification failed:', error)
-  //       if (callback) {
-  //         callback(error)
-  //       }
-  //       return
-  //     }
-      
-  //     console.log('Captcha verification successful, proceeding with Auth0 signup')
-  //     // Proceed with normal Auth0 signup flow
-  //     var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
-  //     Auth0.requestCredential(options, credentialRequestCompleteCallback)
-  //   })
-  // } else {
-  //   // For login or other operations, captcha is optional
-  //   if (captchaToken) {
-  //     console.log('Verifying captcha token before Auth0 login')
-      
-  //     Meteor.call('auth0.verifyRecaptcha', captchaToken, (error, result) => {
-  //       if (error) {
-  //         console.error('Captcha verification failed:', error)
-  //         if (callback) {
-  //           callback(error)
-  //         }
-  //         return
-  //       }
-        
-  //       console.log('Captcha verification successful, proceeding with Auth0 login')
-  //       // Proceed with normal Auth0 login flow
-  //       var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
-  //       Auth0.requestCredential(options, credentialRequestCompleteCallback)
-  //     })
-  //   } else {
-      // No captcha token provided for login, proceed with normal flow
-      var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
-      Auth0.requestCredential(options, credentialRequestCompleteCallback)
-    // }
-  // }
+  var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
+  Auth0.requestCredential(options, credentialRequestCompleteCallback)
 }
 
 /**

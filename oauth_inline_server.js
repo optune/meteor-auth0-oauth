@@ -47,7 +47,6 @@ const registeredServices = {}
 //
 OAuthInline.registerService = (name, version, urls, handleOauthRequest) => {
   if (registeredServices[name]) throw new Error(`Already registered the ${name} OAuth service`)
-    console.log('oauth Registering service', name, version, urls, handleOauthRequest)
 
   registeredServices[name] = {
     serviceName: name,
@@ -144,17 +143,6 @@ WebApp.connectHandlers.use(middleware)
 //
 // @returns {String|null} e.g. "auth0", or null if this isn't an oauth request
 const checkOauthRequest = (req) => {
-
-  console.log('checking request: ', {
-    url: req.url,
-    headers: req.headers,
-    body: req.body,
-    method: req.method,
-    query: req.query,
-    params: req.params,
-    cookies: req.cookies,
-    originalUrl: req.originalUrl,
-  })
   // req.url will be "/_oauth/<service name>" with an optional "?close".
   const i = req.url.indexOf('?')
   let barePath
