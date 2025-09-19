@@ -27,6 +27,8 @@ export const showInlineLoginForm = options => {
   const loginElement = document.getElementById(options.lock.containerId)
   let iFrame
 
+  console.log('oauth_inline_browser.js:showInlineLoginForm', options)
+
   if (loginElement) {
     /*
      * Add message event listener for auth0 response from iFrame

@@ -66,6 +66,7 @@ const middleware = (req, res, next) => {
   // Make sure to catch any exceptions because otherwise we'd crash
   // the runner
   try {
+    // console.log('oauth middleware', {req, res})
     const request = checkOauthRequest(req)
 
     if (!request?.serviceName) {

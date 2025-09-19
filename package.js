@@ -7,7 +7,7 @@ Package.describe({
 
 Npm.depends({
   'auth0-lock': '11.32.2',
-  'body-parser': '1.19.2',
+  'body-parser': '1.19.2'
 })
 
 Package.onUse(function(api) {

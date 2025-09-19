@@ -19,6 +19,7 @@ Auth0 = {}
 Accounts.oauth.registerService('auth0')
 
 Meteor.loginWithAuth0 = function(options, callback) {
+
   /**
    * support (options, callback) and (callback)
    */
@@ -27,11 +28,9 @@ Meteor.loginWithAuth0 = function(options, callback) {
     options = null
   }
 
+  options = options || {}
   options.callback = callback
 
-  /**
-   *
-   */
   var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback)
   Auth0.requestCredential(options, credentialRequestCompleteCallback)
 }
