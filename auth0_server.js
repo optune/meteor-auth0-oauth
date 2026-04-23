@@ -99,10 +99,7 @@ const verifyRecaptcha = async (token, remoteip) => {
 Meteor.methods({
   async 'auth0.verifyRecaptcha'(arg) {
     // Basic arg validation
-    check(
-      arg,
-      Match.OneOf(String, { token: String, action: Match.Optional(String) })
-    )
+    check(arg, Match.OneOf(String, { token: String, action: Match.Optional(String) }))
 
     const token = typeof arg === 'string' ? arg : arg.token
     if (!token) {
@@ -112,10 +109,10 @@ Meteor.methods({
     const remoteip = this.connection?.clientAddress
 
     // --- Visibility in server logs for debugging
-    console.log(
-      '[auth0.verifyRecaptcha] start',
-      { hasToken: Boolean(token), tokenLen: token.length, remoteip }
-    )
+    // console.log(
+    //   '[auth0.verifyRecaptcha] start',
+    //   { hasToken: Boolean(token), tokenLen: token.length, remoteip }
+    // )
 
     try {
       const result = await verifyRecaptcha(token, remoteip)
@@ -148,7 +145,6 @@ Auth0.retrieveCredential = (credentialToken, credentialSecret) => {
  */
 
 OAuthInline.registerService('auth0', 2, null, (query, ...rest) => {
-
   /**
    * Make sure we have a config object for subsequent use (boilerplate)
    */
@@ -284,7 +280,10 @@ const fetchTokensAsync = (config, query, callback) => {
     .then((response) => response.json())
     .then((data) => callback(undefined, data))
     .catch((error) => {
-      callback(new Error(`Failed to fetch OAuth token information from Auth0. ${error.message}`), error)
+      callback(
+        new Error(`Failed to fetch OAuth token information from Auth0. ${error.message}`),
+        error
+      )
     })
 }
 
