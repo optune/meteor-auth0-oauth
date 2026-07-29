@@ -40,6 +40,13 @@ Meteor.loginWithAuth0 = function(options, callback) {
  */
 
 Auth0._loginStyle = function(config, options) {
+  // Cordova must never top-frame redirect (incl. `/_signup`) — leave WebView shell
+  if (Meteor.isCordova) {
+    return (
+      (options.loginStyle === 'inline' && 'inline') || OAuth._loginStyle('auth0', config, options)
+    )
+  }
+
   return (
     (options.path === SIGNUP_AS && 'redirect') ||
     (options.loginStyle === 'inline' && 'inline') ||
